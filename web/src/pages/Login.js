@@ -1,11 +1,11 @@
 import React from "react";
 import { Navigate } from "react-router-dom";
-import { useSettingsStore } from "../utils/store";
+import { UseAuthStore } from "../utils/store";
 import LoginForm from "../components/LoginForm";
 import Navbar from "../components/Navbar";
 
 function Login() {
-  const isLoggedIn = useSettingsStore((state) => state.isLoggedIn);
+  const isLoggedIn = UseAuthStore((state) => state.isLoggedIn);
 
   if (isLoggedIn) {
     return <Navigate to="/" />;

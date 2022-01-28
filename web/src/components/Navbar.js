@@ -1,10 +1,10 @@
 import React from "react";
 import { Navigate } from "react-router-dom";
-import { useSettingsStore } from "../utils/store";
+import { UseAuthStore } from "../utils/store";
 
 function Navbar() {
-  const isLoggedIn = useSettingsStore((state) => state.isLoggedIn);
-  const setIsLoggedIn = useSettingsStore((state) => state.setIsLoggedIn);
+  const isLoggedIn = UseAuthStore((state) => state.isLoggedIn);
+  const setIsLoggedIn = UseAuthStore((state) => state.setIsLoggedIn);
 
   const handleLogout = async () => {
     try {

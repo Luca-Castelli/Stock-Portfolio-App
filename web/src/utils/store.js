@@ -4,18 +4,20 @@ import { devtools, persist } from "zustand/middleware";
 let settingsStore = (set) => ({
   isDarkMode: true,
   setIsDarkMode: () => set((state) => ({ isDarkMode: !state.isDarkMode })),
-  isLoggedIn: false,
-  setIsLoggedIn: (val) => set((state) => ({ isLoggedIn: val })),
 });
 
 let authStore = (set) => ({
   csrfToken: null,
   setCsrfToken: (val) => set((state) => ({ csrfToken: val })),
+  isLoggedIn: false,
+  setIsLoggedIn: (val) => set((state) => ({ isLoggedIn: val })),
 });
 
 let dataStore = (set) => ({
   isTradeLogUpdated: true,
   setIsTradeLogUpdated: (val) => set((state) => ({ isTradeLogUpdated: val })),
+  errorMessage: { isError: false, msg: "" },
+  setErrorMessage: (val) => set((state) => ({ errorMessage: val })),
 });
 
 settingsStore = devtools(settingsStore);

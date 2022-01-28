@@ -8,6 +8,8 @@ function TradeLogRow({ item }) {
   const setIsTradeLogUpdated = UseDataStore(
     (state) => state.setIsTradeLogUpdated
   );
+  const setErrorMessage = UseDataStore((state) => state.setErrorMessage);
+
   const {
     id,
     date,
@@ -35,13 +37,12 @@ function TradeLogRow({ item }) {
       });
       const data = await response.json();
       setIsTradeLogUpdated(false);
-      if (response.status === 200) {
-        console.log("removed trade!");
-      } else {
-        console.log("failed to remove trade!");
+      if (response.status !== 200) {
+        setErrorMessage({ isError: true, msg: data });
       }
     } catch (error) {
       console.log(error);
+      setErrorMessage({ isError: true, msg: "Error reaching server." });
     }
   };
 

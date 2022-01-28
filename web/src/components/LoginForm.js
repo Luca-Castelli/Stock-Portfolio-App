@@ -1,8 +1,8 @@
 import React, { useEffect, useRef } from "react";
-import { useSettingsStore, UseAuthStore } from "../utils/store";
+import { UseAuthStore } from "../utils/store";
 
 function LoginForm() {
-  const setIsLoggedIn = useSettingsStore((state) => state.setIsLoggedIn);
+  const setIsLoggedIn = UseAuthStore((state) => state.setIsLoggedIn);
   const csrfToken = UseAuthStore((state) => state.csrfToken);
 
   const emailRef = useRef("");

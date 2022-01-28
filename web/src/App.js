@@ -9,7 +9,7 @@ import Error from "./pages/Error";
 
 function App() {
   const isDarkMode = useSettingsStore((state) => state.isDarkMode);
-  const setIsLoggedIn = useSettingsStore((state) => state.setIsLoggedIn);
+  const setIsLoggedIn = UseAuthStore((state) => state.setIsLoggedIn);
   const setCsrfToken = UseAuthStore((state) => state.setCsrfToken);
 
   const csrf = async () => {

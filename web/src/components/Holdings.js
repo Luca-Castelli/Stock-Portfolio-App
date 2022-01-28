@@ -1,20 +1,17 @@
 import React, { useEffect, useState } from "react";
 import { IoArrowDown, IoArrowUp } from "react-icons/io5";
 import { useSortableData } from "../utils/useSortableData";
-import TradeLogRow from "./TradeLogRow";
+import HoldingsRow from "./HoldingsRow";
 import { UseDataStore } from "../utils/store";
 
-function TradeLog() {
+function Holdings() {
   const isTradeLogUpdated = UseDataStore((state) => state.isTradeLogUpdated);
-  const setIsTradeLogUpdated = UseDataStore(
-    (state) => state.setIsTradeLogUpdated
-  );
-  const [tradeLog, setTradeLog] = useState([]);
-  const { items, requestSort, sortConfig } = useSortableData(tradeLog);
+  const [holdings, setHoldings] = useState([]);
+  const { items, requestSort, sortConfig } = useSortableData(holdings);
 
-  const getTradeLog = async () => {
+  const getHoldings = async () => {
     try {
-      const response = await fetch("/api/data/tradeLog", {
+      const response = await fetch("/api/data/holdings", {
         method: "GET",
         credentials: "same-origin",
         headers: {
@@ -22,15 +19,14 @@ function TradeLog() {
         },
       });
       const data = await response.json();
-      setIsTradeLogUpdated(true);
       if (response.status === 200) {
-        setTradeLog(JSON.parse(data));
+        setHoldings(JSON.parse(data));
       } else {
-        setTradeLog([]);
+        setHoldings([]);
       }
     } catch (error) {
       console.log(error);
-      setTradeLog([]);
+      setHoldings([]);
     }
   };
 
@@ -48,39 +44,22 @@ function TradeLog() {
   };
 
   useEffect(() => {
-    getTradeLog();
+    getHoldings();
   }, [isTradeLogUpdated]);
 
   return (
-    <div className="mx-8 mb-8 max-w-5xl">
+    <div className="m-8 max-w-5xl">
+      <h1 className="mb-2 font-bold dark: text-amber-400">Holdings</h1>
       <table className="table-fixed w-full">
         <thead className="text-left dark: bg-slate-700 text-white">
           <tr>
             <th className="pl-2 rounded-l-lg">
-              <button
-                onClick={() => requestSort("date")}
-                className="inline-flex items-center"
-              >
-                Trade Date
-                {getSortArrow("date")}
-              </button>
-            </th>
-            <th className="pl-2">
               <button
                 onClick={() => requestSort("account")}
                 className="inline-flex items-center"
               >
                 Account
                 {getSortArrow("account")}
-              </button>
-            </th>
-            <th className="pl-2">
-              <button
-                onClick={() => requestSort("transaction")}
-                className="inline-flex items-center"
-              >
-                Transaction
-                {getSortArrow("transaction")}
               </button>
             </th>
             <th className="pl-2">
@@ -103,28 +82,27 @@ function TradeLog() {
             </th>
             <th className="pl-2">
               <button
-                onClick={() => requestSort("price")}
+                onClick={() => requestSort("average_cost_basis")}
                 className="inline-flex items-center"
               >
-                Price
-                {getSortArrow("price")}
+                ACB
+                {getSortArrow("average_cost_basis")}
               </button>
             </th>
             <th className="pl-2">
               <button
-                onClick={() => requestSort("commission")}
+                onClick={() => requestSort("average_cost_basis_ps")}
                 className="inline-flex items-center"
               >
-                Commission
-                {getSortArrow("commission")}
+                ACB Per Share
+                {getSortArrow("quantaverage_cost_basis_psity")}
               </button>
             </th>
-            <th className="pl-2 rounded-r-lg w-8"></th>
           </tr>
         </thead>
         <tbody>
           {items.map((item, key) => {
-            return <TradeLogRow key={key} item={item} />;
+            return <HoldingsRow key={key} item={item} />;
           })}
         </tbody>
       </table>
@@ -132,4 +110,4 @@ function TradeLog() {
   );
 }
 
-export default TradeLog;
+export default Holdings;
