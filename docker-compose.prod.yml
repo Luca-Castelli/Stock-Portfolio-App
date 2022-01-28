@@ -1,0 +1,34 @@
+version: "3.8"
+
+services:
+  db:
+    container_name: db
+    image: postgres:13-alpine
+    volumes:
+      - ./db/postgres_data_prod:/var/lib/postgresql/data/
+    env_file:
+      - ./.env.prod.db
+  server:
+    container_name: server
+    build:
+      context: ./server
+      dockerfile: Dockerfile.prod
+    command: gunicorn --bind 0.0.0.0:5000 manage:app
+    expose:
+      - 5000
+    env_file:
+      - ./.env.prod
+    depends_on:
+      - db
+  web:
+    container_name: web
+    build:
+      context: ./web
+      dockerfile: Dockerfile.prod
+    ports:
+      - 3000:80
+    depends_on:
+      - server
+
+volumes:
+  postgres_data_prod:
