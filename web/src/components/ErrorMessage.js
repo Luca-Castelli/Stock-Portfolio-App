@@ -8,7 +8,7 @@ function ErrorMessage() {
   useEffect(() => {
     setTimeout(() => {
       setErrorMessage({ isError: false, msg: "" });
-    }, 5000);
+    }, 10000);
   }, [errorMessage]);
 
   return (

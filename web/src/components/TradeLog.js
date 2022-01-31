@@ -51,6 +51,10 @@ function TradeLog() {
     getTradeLog();
   }, [isTradeLogUpdated]);
 
+  useEffect(() => {
+    requestSort("date");
+  }, []);
+
   return (
     <div className="mx-8 mb-8 max-w-5xl">
       <table className="table-fixed w-full">

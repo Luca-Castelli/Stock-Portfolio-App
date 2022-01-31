@@ -47,6 +47,10 @@ function Holdings() {
     getHoldings();
   }, [isTradeLogUpdated]);
 
+  useEffect(() => {
+    requestSort("account");
+  }, []);
+
   return (
     <div className="m-8 max-w-5xl">
       <h1 className="mb-2 font-bold dark: text-amber-400">Holdings</h1>
@@ -82,20 +86,47 @@ function Holdings() {
             </th>
             <th className="pl-2">
               <button
+                onClick={() => requestSort("average_cost_basis_ps")}
+                className="inline-flex items-center"
+              >
+                Buy Price
+                {getSortArrow("average_cost_basis_ps")}
+              </button>
+            </th>
+            <th className="pl-2">
+              <button
+                onClick={() => requestSort("live_price")}
+                className="inline-flex items-center"
+              >
+                Live Price
+                {getSortArrow("live_price")}
+              </button>
+            </th>
+            <th className="pl-2">
+              <button
                 onClick={() => requestSort("average_cost_basis")}
                 className="inline-flex items-center"
               >
-                ACB
+                Book Value
                 {getSortArrow("average_cost_basis")}
               </button>
             </th>
             <th className="pl-2">
               <button
-                onClick={() => requestSort("average_cost_basis_ps")}
+                onClick={() => requestSort("market_value")}
                 className="inline-flex items-center"
               >
-                ACB Per Share
-                {getSortArrow("quantaverage_cost_basis_psity")}
+                Market Value
+                {getSortArrow("market_value")}
+              </button>
+            </th>
+            <th className="pl-2">
+              <button
+                onClick={() => requestSort("realized_gain")}
+                className="inline-flex items-center"
+              >
+                Realized Gain
+                {getSortArrow("realized_gain")}
               </button>
             </th>
           </tr>

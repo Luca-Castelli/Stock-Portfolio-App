@@ -41,8 +41,8 @@ def trade_log_insert():
         msg = f"Failed to add trade. Adding would bring your {ticker} share count below zero."
         return jsonify(msg), 404
 
-    holding_quantity, holding_acb, holding_acb_ps = calculate_acb("Insert", user_id, transaction, ticker, quantity, price, commission)
-    new_holding = Holding(user_id=user_id, account=account, ticker=ticker, quantity=holding_quantity, average_cost_basis=holding_acb, average_cost_basis_ps=holding_acb_ps)
+    holding_quantity, holding_acb, holding_acb_ps, realized_gain = calculate_acb("Insert", user_id, transaction, ticker, quantity, price, commission)
+    new_holding = Holding(user_id=user_id, account=account, ticker=ticker, quantity=holding_quantity, average_cost_basis=holding_acb, average_cost_basis_ps=holding_acb_ps, realized_gain=realized_gain)
     db.session.add(new_holding)
     db.session.commit()
 
@@ -70,8 +70,8 @@ def trade_log_remove():
         msg = f"Failed to remove trade. Adding would bring your {ticker} share count below zero."
         return jsonify(msg), 404
 
-    holding_quantity, holding_acb, holding_acb_ps = calculate_acb("Remove", user_id, transaction, ticker, quantity, price, commission)
-    new_holding = Holding(user_id=user_id, account=account, ticker=ticker, quantity=holding_quantity, average_cost_basis=holding_acb, average_cost_basis_ps=holding_acb_ps)
+    holding_quantity, holding_acb, holding_acb_ps, realized_gain = calculate_acb("Remove", user_id, transaction, ticker, quantity, price, commission)
+    new_holding = Holding(user_id=user_id, account=account, ticker=ticker, quantity=holding_quantity, average_cost_basis=holding_acb, average_cost_basis_ps=holding_acb_ps, realized_gain=realized_gain)
     db.session.add(new_holding)
     db.session.commit()
 
@@ -96,14 +96,17 @@ def calculate_acb(operation, user_id, transaction, ticker, quantity, price, comm
         pre_holding = Holding.query.filter_by(user_id=user_id, ticker=ticker).one()
         pre_quantity = pre_holding.quantity
         pre_acb = pre_holding.average_cost_basis
+        pre_realized_gain = pre_holding.realized_gain
         Holding.query.filter_by(user_id=user_id, ticker=ticker).delete()
         db.session.commit()
     except:
         pre_quantity = 0
         pre_acb = 0
+        pre_realized_gain = 0
 
     pre_quantity = Decimal(pre_quantity)
     pre_acb = Decimal(pre_acb)
+    pre_realized_gain = Decimal(pre_realized_gain)
     quantity = Decimal(quantity)
     price = Decimal(price)
     commission = Decimal(commission)
@@ -112,20 +115,24 @@ def calculate_acb(operation, user_id, transaction, ticker, quantity, price, comm
         if transaction == "Buy":
             post_quantity = pre_quantity + quantity
             post_acb = pre_acb + ((quantity * price) + commission)
+            realized_gain = pre_realized_gain
         else:
             post_quantity = pre_quantity - quantity
             post_acb = pre_acb - (quantity * pre_acb/pre_quantity)
+            realized_gain = pre_realized_gain + ((quantity * price) - commission)
     else:
         if transaction == "Buy":
             post_quantity = pre_quantity - quantity
             post_acb = pre_acb - ((quantity * price) + commission)
+            realized_gain = pre_realized_gain
         else:
             post_quantity = pre_quantity + quantity
             post_acb = pre_acb + (quantity * pre_acb/pre_quantity)
+            realized_gain = pre_realized_gain - ((quantity * price) - commission)
 
     if post_quantity != Decimal(0):
         post_acb_ps = post_acb / post_quantity
     else:
         post_acb_ps = Decimal(0)
 
-    return int(post_quantity), Decimal(post_acb), Decimal(post_acb_ps)
+    return int(post_quantity), Decimal(post_acb), Decimal(post_acb_ps), Decimal(realized_gain)

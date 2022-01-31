@@ -31,7 +31,8 @@ class Holding(db.Model):
     quantity = db.Column(db.Integer, unique=False, nullable=False)
     average_cost_basis = db.Column(db.Numeric(15,2), unique=False, nullable=False)
     average_cost_basis_ps = db.Column(db.Numeric(15,2), unique=False, nullable=False)
-
+    realized_gain = db.Column(db.Numeric(15,2), unique=False, nullable=False)
+    
 class Holding_Schema(SQLAlchemyAutoSchema):
     class Meta:
         model = Holding

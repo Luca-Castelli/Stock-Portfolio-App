@@ -3,6 +3,7 @@ import { Navigate } from "react-router-dom";
 import { UseAuthStore } from "../utils/store";
 
 import Navbar from "../components/Navbar";
+import Performance from "../components/Performance";
 import Holdings from "../components/Holdings";
 import TradeLogForm from "../components/TradeLogForm";
 import TradeLog from "../components/TradeLog";
@@ -17,6 +18,7 @@ function Home() {
   return (
     <main className="h-screen dark:bg-black">
       <Navbar />
+      <Performance />
       <Holdings />
       <TradeLogForm />
       <TradeLog />
