@@ -9,23 +9,24 @@ function HoldingsRow({ item }) {
   const {
     id,
     account,
-    ticker,
+    symbol,
     quantity,
     average_cost_basis,
     average_cost_basis_ps,
     realized_gain,
+    latest_price,
   } = item;
 
   return (
-    <tr className="border-y dark: border-slate-700 text-white ">
+    <tr className="border-y text-sm dark: border-slate-700 text-white">
       <td className="pl-2">{account}</td>
-      <td className="pl-2">{ticker}</td>
-      <td className="pl-2">{NumberDisplay(quantity, 0)}</td>
-      <td className="pl-2">{NumberDisplay(average_cost_basis_ps, 2)}</td>
+      <td className="pl-2">{symbol}</td>
+      <td className="pl-2">{quantity}</td>
+      <td className="pl-2">{average_cost_basis_ps}</td>
+      <td className="pl-2">{latest_price}</td>
+      <td className="pl-2">{average_cost_basis}</td>
       <td className="pl-2">{NumberDisplay(0, 2)}</td>
-      <td className="pl-2">{NumberDisplay(average_cost_basis, 2)}</td>
-      <td className="pl-2">{NumberDisplay(0, 2)}</td>
-      <td className="pl-2">{NumberDisplay(realized_gain, 2)}</td>
+      <td className="pl-2">{realized_gain}</td>
     </tr>
   );
 }

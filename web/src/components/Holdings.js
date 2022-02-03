@@ -11,7 +11,7 @@ function Holdings() {
 
   const getHoldings = async () => {
     try {
-      const response = await fetch("/api/data/holdings", {
+      const response = await fetch("/api/client_data/holdings", {
         method: "GET",
         credentials: "same-origin",
         headers: {
@@ -20,7 +20,7 @@ function Holdings() {
       });
       const data = await response.json();
       if (response.status === 200) {
-        setHoldings(JSON.parse(data));
+        setHoldings(data);
       } else {
         setHoldings([]);
       }
@@ -68,11 +68,11 @@ function Holdings() {
             </th>
             <th className="pl-2">
               <button
-                onClick={() => requestSort("ticker")}
+                onClick={() => requestSort("symbol")}
                 className="inline-flex items-center"
               >
                 Ticker
-                {getSortArrow("ticker")}
+                {getSortArrow("symbol")}
               </button>
             </th>
             <th className="pl-2">

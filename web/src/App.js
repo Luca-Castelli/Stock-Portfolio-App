@@ -6,22 +6,28 @@ import { useSettingsStore, UseAuthStore } from "./utils/store";
 import Login from "./pages/Login";
 import Home from "./pages/Home";
 import Error from "./pages/Error";
+import TestPage from "./pages/TestPage";
 
 function App() {
   const isDarkMode = useSettingsStore((state) => state.isDarkMode);
   const setIsLoggedIn = UseAuthStore((state) => state.setIsLoggedIn);
   const setCsrfToken = UseAuthStore((state) => state.setCsrfToken);
 
-  const csrf = async () => {
+  const getCsrf = async () => {
     try {
-      const response = await fetch("/api/auth/csrf", {
+      const response = await fetch("/api/auth/getCsrf", {
         method: "GET",
         credentials: "same-origin",
       });
       const data = response.headers.get(["X-CSRFToken"]);
-      setCsrfToken(data);
+      if (response.status === 200) {
+        setCsrfToken(data);
+      } else {
+        setCsrfToken("");
+      }
     } catch (error) {
       console.log(error);
+      setCsrfToken("");
     }
   };
 
@@ -32,7 +38,7 @@ function App() {
         credentials: "same-origin",
       });
       const data = await response.json();
-      if (data.login && response.status === 200) {
+      if (response.status === 200) {
         setIsLoggedIn(true);
       } else {
         setIsLoggedIn(false);
@@ -45,7 +51,7 @@ function App() {
 
   useEffect(() => {
     getSession();
-    csrf();
+    getCsrf();
   }, []);
 
   useEffect(() => {
@@ -61,6 +67,7 @@ function App() {
       <Routes>
         <Route exact path="/" element={<Home />}></Route>
         <Route exact path="/login" element={<Login />}></Route>
+        <Route exact path="/test" element={<TestPage />}></Route>
         <Route exact path="*" element={<Error />}></Route>
       </Routes>
     </Router>

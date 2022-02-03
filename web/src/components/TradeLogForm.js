@@ -1,7 +1,8 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { UseAuthStore, UseDataStore } from "../utils/store";
 import { useForm } from "../utils/useForm";
 import ErrorMessage from "./ErrorMessage";
+import AutoCompleteTicker from "./AutoCompleteTicker";
 
 function TradeLogForm() {
   const csrfToken = UseAuthStore((state) => state.csrfToken);
@@ -9,7 +10,12 @@ function TradeLogForm() {
   const setIsTradeLogUpdated = UseDataStore(
     (state) => state.setIsTradeLogUpdated
   );
+
   const setErrorMessage = UseDataStore((state) => state.setErrorMessage);
+
+  const [autoCompleteField, setAutoCompleteField] = useState("");
+
+  const [symbols, setSymbols] = useState([]);
 
   const { handleSubmit, handleChange, formData, errors } = useForm({
     validations: {
@@ -34,6 +40,7 @@ function TradeLogForm() {
     },
     onSubmit: () => {
       tradeLogInsert();
+      clearForm();
     },
     initialValues: {
       date: new Date().toISOString().split("T")[0],
@@ -42,33 +49,88 @@ function TradeLogForm() {
     },
   });
 
+  function validateAutoCompleteField() {
+    if (autoCompleteField) {
+      return true;
+    } else {
+      setErrorMessage({
+        isError: true,
+        msg: "Front-end error: Failed to validate symbol.",
+      });
+      return false;
+    }
+  }
+
   const tradeLogInsert = async () => {
+    if (validateAutoCompleteField()) {
+      try {
+        const payload = {
+          date: formData.date,
+          account: formData.account,
+          transaction: formData.transaction,
+          symbol: autoCompleteField.symbol,
+          quantity: formData.quantity,
+          price: formData.price,
+          commission: formData.commission,
+        };
+        const response = await fetch("/api/client_data/tradeLogInsert", {
+          method: "POST",
+          credentials: "same-origin",
+          headers: {
+            "content-type": "application/json",
+            "X-CSRFToken": csrfToken,
+          },
+          body: JSON.stringify(payload),
+        });
+        const data = await response.json();
+        setIsTradeLogUpdated(false);
+        if (response.status !== 200) {
+          setErrorMessage({ isError: true, msg: "Server error: " + data });
+        }
+      } catch (error) {
+        console.log(error);
+        setErrorMessage({
+          isError: true,
+          msg: "Server error: Failed to reach server.",
+        });
+      }
+    }
+    clearForm();
+  };
+
+  function clearForm() {
+    formData.date = new Date().toISOString().split("T")[0];
+    formData.account = "Registered";
+    formData.transaction = "Buy";
+    setAutoCompleteField("");
+    document.getElementById("autoCompleteInput").value = "";
+    formData.quantity = "";
+    formData.price = "";
+    formData.commission = "";
+  }
+
+  const getSymbols = async () => {
     try {
-      const payload = {
-        date: formData.date,
-        account: formData.account,
-        transaction: formData.transaction,
-        ticker: formData.ticker,
-        quantity: formData.quantity,
-        price: formData.price,
-        commission: formData.commission,
-      };
-      const response = await fetch("/api/data/tradeLogInsert", {
-        method: "POST",
+      const response = await fetch("/api/market_data/symbols", {
+        method: "GET",
         credentials: "same-origin",
         headers: {
           "content-type": "application/json",
-          "X-CSRFToken": csrfToken,
         },
-        body: JSON.stringify(payload),
       });
       const data = await response.json();
-      setIsTradeLogUpdated(false);
-      if (response.status !== 200) {
-        setErrorMessage({ isError: true, msg: "Server error: " + data });
+      if (response.status === 200) {
+        setSymbols(data);
+      } else {
+        setSymbols([]);
+        setErrorMessage({
+          isError: true,
+          msg: "Server error: Server returned no symbols.",
+        });
       }
     } catch (error) {
       console.log(error);
+      setSymbols([]);
       setErrorMessage({
         isError: true,
         msg: "Server error: Failed to reach server.",
@@ -76,8 +138,9 @@ function TradeLogForm() {
     }
   };
 
-  console.log(formData);
-  console.log(errors);
+  useEffect(() => {
+    getSymbols();
+  }, []);
 
   return (
     <div className="mt-8 ml-8 mr-[68px] max-w-5xl">
@@ -91,7 +154,7 @@ function TradeLogForm() {
         </button>
         <ErrorMessage />
       </div>
-      <form className="grid grid-rows-1 grid-cols-7 gap-4 py-4 rounded-lg text-sm dark: bg-black text-slate-600">
+      <form className="grid grid-rows-1 grid-cols-7 gap-4 py-4 h-14 text-sm dark: bg-black text-slate-600">
         <input
           type="date"
           value={formData.date || ""}
@@ -110,20 +173,18 @@ function TradeLogForm() {
           <option value="Buy">Buy</option>
           <option value="Sell">Sell</option>
         </select>
-        <input
-          type="text"
-          value={formData.ticker || ""}
-          onChange={handleChange("ticker")}
-          placeholder="AAPL"
-          className="rounded-lg pl-2"
-          required
+        <AutoCompleteTicker
+          data={symbols}
+          onSelect={(AutoCompleteField) =>
+            setAutoCompleteField(AutoCompleteField)
+          }
         />
         <input
           type="text"
           value={formData.quantity || ""}
           onChange={handleChange("quantity")}
           placeholder="100"
-          className="rounded-lg pl-2"
+          className="pl-2 rounded-lg"
           required
         />
         <input

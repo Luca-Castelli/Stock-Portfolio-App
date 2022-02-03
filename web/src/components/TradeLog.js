@@ -14,7 +14,7 @@ function TradeLog() {
 
   const getTradeLog = async () => {
     try {
-      const response = await fetch("/api/data/tradeLog", {
+      const response = await fetch("/api/client_data/tradeLog", {
         method: "GET",
         credentials: "same-origin",
         headers: {
@@ -24,7 +24,7 @@ function TradeLog() {
       const data = await response.json();
       setIsTradeLogUpdated(true);
       if (response.status === 200) {
-        setTradeLog(JSON.parse(data));
+        setTradeLog(data);
       } else {
         setTradeLog([]);
       }
@@ -89,11 +89,11 @@ function TradeLog() {
             </th>
             <th className="pl-2">
               <button
-                onClick={() => requestSort("ticker")}
+                onClick={() => requestSort("symbol")}
                 className="inline-flex items-center"
               >
                 Ticker
-                {getSortArrow("ticker")}
+                {getSortArrow("symbol")}
               </button>
             </th>
             <th className="pl-2">

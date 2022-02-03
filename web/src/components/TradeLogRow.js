@@ -15,7 +15,7 @@ function TradeLogRow({ item }) {
     date,
     account,
     transaction,
-    ticker,
+    symbol,
     quantity,
     price,
     commission,
@@ -26,7 +26,7 @@ function TradeLogRow({ item }) {
       const payload = {
         trade_id: id,
       };
-      const response = await fetch("/api/data/tradeLogRemove", {
+      const response = await fetch("/api/client_data/tradeLogRemove", {
         method: "POST",
         credentials: "same-origin",
         headers: {
@@ -52,14 +52,14 @@ function TradeLogRow({ item }) {
   }
 
   return (
-    <tr className="border-y dark: border-slate-700 text-white ">
-      <td className="pl-2">{date.substr(0, 10)}</td>
+    <tr className="border-y text-sm dark: border-slate-700 text-white">
+      <td className="pl-2">{date}</td>
       <td className="pl-2">{account}</td>
       <td className="pl-2">{transaction}</td>
-      <td className="pl-2">{ticker}</td>
-      <td className="pl-2">{NumberDisplay(quantity, 0)}</td>
-      <td className="pl-2">{NumberDisplay(price, 2)}</td>
-      <td className="pl-2">{NumberDisplay(commission, 2)}</td>
+      <td className="pl-2">{symbol}</td>
+      <td className="pl-2">{quantity}</td>
+      <td className="pl-2">{price}</td>
+      <td className="pl-2">{commission}</td>
       <td>
         <button onClick={handleRemoveTrade} className="align-middle">
           <IoMdRemoveCircle style={{ color: "red" }} />

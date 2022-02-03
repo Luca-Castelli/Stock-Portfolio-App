@@ -18,6 +18,8 @@ let dataStore = (set) => ({
   setIsTradeLogUpdated: (val) => set((state) => ({ isTradeLogUpdated: val })),
   errorMessage: { isError: false, msg: "" },
   setErrorMessage: (val) => set((state) => ({ errorMessage: val })),
+  symbol: "",
+  setSymbol: (val) => set((state) => ({ symbol: val })),
 });
 
 settingsStore = devtools(settingsStore);
