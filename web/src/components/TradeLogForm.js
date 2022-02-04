@@ -46,6 +46,9 @@ function TradeLogForm() {
       date: new Date().toISOString().split("T")[0],
       account: "Registered",
       transaction: "Buy",
+      quantity: "",
+      price: "",
+      commission: "",
     },
   });
 
@@ -142,6 +145,7 @@ function TradeLogForm() {
     getSymbols();
   }, []);
 
+  console.log(formData);
   return (
     <div className="mt-8 ml-8 mr-[68px] max-w-5xl">
       <h1 className="mb-2 font-bold dark: text-amber-400">Trade Log</h1>
@@ -162,16 +166,22 @@ function TradeLogForm() {
           className="rounded-lg pl-2"
           required
         />
-        <select onChange={handleChange("account")} className="rounded-lg pl-2">
+        <select
+          onChange={handleChange("account")}
+          value={formData.account || "Registered"}
+          className="rounded-lg pl-2"
+        >
           <option value="Registered">Registered</option>
           <option value="Non-Registered">Non-Registered</option>
         </select>
         <select
           onChange={handleChange("transaction")}
+          value={formData.transaction || "Buy"}
           className="rounded-lg pl-2"
         >
           <option value="Buy">Buy</option>
           <option value="Sell">Sell</option>
+          <option value="Dividend">Dividend</option>
         </select>
         <AutoCompleteTicker
           data={symbols}
@@ -183,7 +193,7 @@ function TradeLogForm() {
           type="text"
           value={formData.quantity || ""}
           onChange={handleChange("quantity")}
-          placeholder="100"
+          placeholder="Quantity"
           className="pl-2 rounded-lg"
           required
         />
@@ -191,7 +201,7 @@ function TradeLogForm() {
           type="text"
           value={formData.price || ""}
           onChange={handleChange("price")}
-          placeholder="25.55"
+          placeholder="Price"
           className="rounded-lg pl-2"
           required
         />
@@ -199,7 +209,7 @@ function TradeLogForm() {
           type="text"
           value={formData.commission || ""}
           onChange={handleChange("commission")}
-          placeholder="9.99"
+          placeholder="Commission"
           className="rounded-lg pl-2"
           required
         />

@@ -1,4 +1,3 @@
-import simplejson
 from sqlalchemy import Column, Integer, String, Numeric
 
 from app import db
@@ -82,5 +81,5 @@ class Stock_Quote(db.Model):
     def serialize(self):
         return {
             'symbol'            : self.symbol,
-            'latest_price'      : f'{self.latest_price:,.2f}',
+            'latest_price'      : f'{self.latest_price}',
         }

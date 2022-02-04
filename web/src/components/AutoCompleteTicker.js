@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect, useMemo } from "react";
 import AutoCompleteTickerRow from "./AutoCompleteTickerRow";
+import { AiOutlineSearch } from "react-icons/ai";
 
 const AutoCompleteTicker = ({ data, onSelect }) => {
   const [isVisbile, setVisiblity] = useState(false);
@@ -81,18 +82,21 @@ const AutoCompleteTicker = ({ data, onSelect }) => {
 
   return (
     <div ref={searchContainer}>
-      <input
-        type="text"
-        name="search"
-        id="autoCompleteInput"
-        autoComplete="off"
-        value={search}
-        onClick={showSuggestion}
-        onChange={(e) => setSearch(e.target.value)}
-        onKeyDown={(e) => keyboardNavigation(e)}
-        className="pl-2 rounded-lg box-border w-full h-full"
-        placeholder="AAPL"
-      />
+      <div className="flex flex-row pl-2 items-center rounded-lg box-border w-full h-full bg-white">
+        <AiOutlineSearch color="black" />
+        <input
+          type="text"
+          name="search"
+          id="autoCompleteInput"
+          autoComplete="off"
+          value={search}
+          onClick={showSuggestion}
+          onChange={(e) => setSearch(e.target.value)}
+          onKeyDown={(e) => keyboardNavigation(e)}
+          className="pl-2 rounded-lg box-border w-full h-full outline-none"
+          placeholder="Search..."
+        />
+      </div>
 
       {isVisbile ? (
         <div className="sticky text-black bg-white">

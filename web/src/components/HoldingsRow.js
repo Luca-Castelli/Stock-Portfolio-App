@@ -1,11 +1,7 @@
 import React from "react";
-import { IoMdRemoveCircle } from "react-icons/io";
-import { UseAuthStore } from "../utils/store";
-import { NumberDisplay } from "../utils/NumberDisplay";
+import HoldingsRowDisplay from "./HoldingsRowDisplay";
 
 function HoldingsRow({ item }) {
-  const csrfToken = UseAuthStore((state) => state.csrfToken);
-
   const {
     id,
     account,
@@ -13,20 +9,36 @@ function HoldingsRow({ item }) {
     quantity,
     average_cost_basis,
     average_cost_basis_ps,
-    realized_gain,
+    realized_pnl,
+    dividends,
     latest_price,
+    market_value,
+    weight,
+    unrealized_pnl,
+    unrealized_pnl_percent,
   } = item;
 
+  console.log(item);
+
   return (
-    <tr className="border-y text-sm dark: border-slate-700 text-white">
+    <tr className="border-y text-xs dark: border-slate-700 text-white">
       <td className="pl-2">{account}</td>
       <td className="pl-2">{symbol}</td>
-      <td className="pl-2">{quantity}</td>
-      <td className="pl-2">{average_cost_basis_ps}</td>
-      <td className="pl-2">{latest_price}</td>
-      <td className="pl-2">{average_cost_basis}</td>
-      <td className="pl-2">{NumberDisplay(0, 2)}</td>
-      <td className="pl-2">{realized_gain}</td>
+      <HoldingsRowDisplay value={weight} digits={0} isPercent={true} />
+      <HoldingsRowDisplay value={quantity} digits={0} />
+      <HoldingsRowDisplay value={average_cost_basis_ps} digits={2} />
+      <HoldingsRowDisplay value={latest_price} digits={2} />
+      <HoldingsRowDisplay value={average_cost_basis} digits={0} />
+      <HoldingsRowDisplay value={market_value} digits={0} />
+      <HoldingsRowDisplay value={unrealized_pnl} digits={0} isColor={true} />
+      <HoldingsRowDisplay
+        value={unrealized_pnl_percent}
+        digits={0}
+        isPercent={true}
+        isColor={true}
+      />
+      <HoldingsRowDisplay value={dividends} digits={0} />
+      <HoldingsRowDisplay value={realized_pnl} digits={0} isColor={true} />
     </tr>
   );
 }

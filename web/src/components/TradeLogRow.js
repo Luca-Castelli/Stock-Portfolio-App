@@ -57,9 +57,9 @@ function TradeLogRow({ item }) {
       <td className="pl-2">{account}</td>
       <td className="pl-2">{transaction}</td>
       <td className="pl-2">{symbol}</td>
-      <td className="pl-2">{quantity}</td>
-      <td className="pl-2">{price}</td>
-      <td className="pl-2">{commission}</td>
+      <td className="pl-2">{NumberDisplay(quantity, 0)}</td>
+      <td className="pl-2">{NumberDisplay(price, 2)}</td>
+      <td className="pl-2">{NumberDisplay(commission, 2)}</td>
       <td>
         <button onClick={handleRemoveTrade} className="align-middle">
           <IoMdRemoveCircle style={{ color: "red" }} />
