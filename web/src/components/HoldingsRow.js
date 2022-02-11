@@ -18,8 +18,6 @@ function HoldingsRow({ item }) {
     unrealized_pnl_percent,
   } = item;
 
-  console.log(item);
-
   return (
     <tr className="border-y text-xs dark: border-slate-700 text-white">
       <td className="pl-2">{account}</td>

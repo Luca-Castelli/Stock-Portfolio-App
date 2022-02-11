@@ -10,7 +10,6 @@ export function NumberDisplay(value, digits) {
 }
 
 export function PercentageDisplay(value, digits) {
-  value = value * 100;
   if (value === 0) {
     return "-";
   } else {

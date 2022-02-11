@@ -53,7 +53,10 @@ function Holdings() {
 
   return (
     <div className="m-8 max-w-5xl">
-      <h1 className="mb-2 font-bold dark: text-amber-400">Holdings</h1>
+      <div className="flex items-center">
+        <h1 className="mb-2 font-bold dark: text-amber-400">Holdings</h1>
+      </div>
+
       <table className="w-full">
         <thead className="text-sm dark: bg-slate-700 text-white">
           <tr>

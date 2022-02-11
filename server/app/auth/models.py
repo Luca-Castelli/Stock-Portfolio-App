@@ -15,7 +15,6 @@ class Users(UserMixin, db.Model):
     key = Column(LargeBinary(256), nullable=False)
 
     trades = db.relationship("Trade_Log", backref='user')
-    holdings = db.relationship("Holding", backref='user')
 
     def __init__(self, username, salt, key):
         self.username = username

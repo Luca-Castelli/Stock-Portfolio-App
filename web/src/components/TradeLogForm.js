@@ -145,7 +145,6 @@ function TradeLogForm() {
     getSymbols();
   }, []);
 
-  console.log(formData);
   return (
     <div className="mt-8 ml-8 mr-[68px] max-w-5xl">
       <h1 className="mb-2 font-bold dark: text-amber-400">Trade Log</h1>

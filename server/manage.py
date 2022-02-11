@@ -4,8 +4,8 @@ from flask.cli import FlaskGroup
 
 from app import app, db
 from app.auth.models import Users
-from app.client_data.models import Trade_Log, Holding
-from app.market_data.models import Market_Universe, Stock_Quote
+from app.client_data.models import Trade_Log
+from app.market_data.models import Stock, Stock_Price, FX, FX_Price
 
 
 cli = FlaskGroup(app)
@@ -16,8 +16,8 @@ def create_db():
     db.create_all()
     db.session.commit()
 
-@cli.command("seed_db")
-def seed_db():
+@cli.command("seed_users")
+def seed_users():
     email = "luca.p.castelli@gmail.com"
     password = "test"
     if Users.create_user(username=email, password=password):
@@ -28,113 +28,8 @@ def seed_db():
     if Users.create_user(username=email, password=password):
         db.session.commit()
 
-    user = Users.get_user_by_id(1)
-
-    date = datetime(2022,1,1)
-    account = "Registered"
-    transaction = "Buy"
-    symbol = "AAPL"
-    quantity = int(100)
-    price = Decimal(95.05)
-    commission = Decimal(9.99)
-    latest_price = Decimal(565.55)
-    success, stock_quote = Stock_Quote.create_stock_quote(symbol=symbol, latest_price=latest_price)
-    if success:
-        db.session.commit()
-    user = Users.get_user_by_id(user_id=user.id)
-    success, holding = Holding.create_holding(account=account, stock=stock_quote, user=user)
-    if success:
-        db.session.commit()
-    if holding.update(operation="Insert", transaction=transaction, quantity=quantity, price=price, commission=commission):
-        db.session.commit()
-    if Trade_Log.create_trade_log(date=date, account=account, transaction=transaction, quantity=quantity,
-            price=price, commission=commission, stock=stock_quote, user=user):
-        db.session.commit()
-
-    date = datetime(2022,1,10)
-    account = "Registered"
-    transaction = "Buy"
-    symbol = "AAPL"
-    quantity = int(200)
-    price = Decimal(110.12)
-    commission = Decimal(9.99)
-    latest_price = Decimal(211.55)
-    success, stock_quote = Stock_Quote.create_stock_quote(symbol=symbol, latest_price=latest_price)
-    if success:
-        db.session.commit()
-    user = Users.get_user_by_id(user_id=user.id)
-    success, holding = Holding.create_holding(account=account, stock=stock_quote, user=user)
-    if success:
-        db.session.commit()
-    if holding.update(operation="Insert", transaction=transaction, quantity=quantity, price=price, commission=commission):
-        db.session.commit()
-    if Trade_Log.create_trade_log(date=date, account=account, transaction=transaction, quantity=quantity,
-            price=price, commission=commission, stock=stock_quote, user=user):
-        db.session.commit()
-
-    date = datetime(2022,1,15)
-    account = "Registered"
-    transaction = "Sell"
-    symbol = "AAPL"
-    quantity = int(50)
-    price = Decimal(130.60)
-    commission = Decimal(9.99)
-    latest_price = Decimal(13.55)
-    success, stock_quote = Stock_Quote.create_stock_quote(symbol=symbol, latest_price=latest_price)
-    if success:
-        db.session.commit()
-    user = Users.get_user_by_id(user_id=user.id)
-    success, holding = Holding.create_holding(account=account, stock=stock_quote, user=user)
-    if success:
-        db.session.commit()
-    if holding.update(operation="Insert", transaction=transaction, quantity=quantity, price=price, commission=commission):
-        db.session.commit()
-    if Trade_Log.create_trade_log(date=date, account=account, transaction=transaction, quantity=quantity,
-            price=price, commission=commission, stock=stock_quote, user=user):
-        db.session.commit()
-
-    date = datetime(2022,1,20)
-    account = "Registered"
-    transaction = "Buy"
-    symbol = "MSFT"
-    quantity = int(100)
-    price = Decimal(305)
-    commission = Decimal(9.99)
-    latest_price = Decimal(12.55)
-    success, stock_quote = Stock_Quote.create_stock_quote(symbol=symbol, latest_price=latest_price)
-    if success:
-        db.session.commit()
-    user = Users.get_user_by_id(user_id=user.id)
-    success, holding = Holding.create_holding(account=account, stock=stock_quote, user=user)
-    if success:
-        db.session.commit()
-    if holding.update(operation="Insert", transaction=transaction, quantity=quantity, price=price, commission=commission):
-        db.session.commit()
-    if Trade_Log.create_trade_log(date=date, account=account, transaction=transaction, quantity=quantity,
-            price=price, commission=commission, stock=stock_quote, user=user):
-        db.session.commit()
-
-    date = datetime(2022,1,20)
-    account = "Non-Registered"
-    transaction = "Buy"
-    symbol = "GLO-CT"
-    quantity = int(1000)
-    price = Decimal(3.05)
-    commission = Decimal(9.99)
-    latest_price = Decimal(2.55)
-    success, stock_quote = Stock_Quote.create_stock_quote(symbol=symbol, latest_price=latest_price)
-    if success:
-        db.session.commit()
-    user = Users.get_user_by_id(user_id=user.id)
-    success, holding = Holding.create_holding(account=account, stock=stock_quote, user=user)
-    if success:
-        db.session.commit()
-    if holding.update(operation="Insert", transaction=transaction, quantity=quantity, price=price, commission=commission):
-        db.session.commit()
-    if Trade_Log.create_trade_log(date=date, account=account, transaction=transaction, quantity=quantity,
-            price=price, commission=commission, stock=stock_quote, user=user):
-        db.session.commit()
-
+@cli.command("seed_stocks")
+def seed_stocks():
     symbol = "AAPL"
     exchange = "NYSE"
     exchange_name = "New York Stock Exchange"
@@ -142,8 +37,8 @@ def seed_db():
     type = "cs"
     region = "US"
     currency = "USD"
-    universe = Market_Universe(symbol, exchange, exchange_name, name, type, region, currency)
-    db.session.add(universe)
+    stock = Stock(symbol, exchange, exchange_name, name, type, region, currency)
+    db.session.add(stock)
     db.session.commit()
 
     symbol = "MSFT"
@@ -153,21 +48,150 @@ def seed_db():
     type = "cs"
     region = "US"
     currency = "USD"
-    universe = Market_Universe(symbol, exchange, exchange_name, name, type, region, currency)
-    db.session.add(universe)
+    stock = Stock(symbol, exchange, exchange_name, name, type, region, currency)
+    db.session.add(stock)
     db.session.commit()
 
-    symbol = "GLO-CT"
+    symbol = "GLO.TO"
     exchange = "TSX"
     exchange_name = "Toronto Stock Exchange"
     name = "Global Atomic Corp."
     type = "cs"
     region = "CA"
     currency = "CAD"
-    universe = Market_Universe(symbol, exchange, exchange_name, name, type, region, currency)
-    db.session.add(universe)
+    stock = Stock(symbol, exchange, exchange_name, name, type, region, currency)
+    db.session.add(stock)
     db.session.commit()
 
+@cli.command("seed_fx")
+def seed_fx():
+    FX.populate_fx()
+
+@cli.command("seed_trade_log")
+def seed_trade_log():
+
+    user = Users.get_user_by_id(1)
+    date = datetime(2022,1,1)
+    account = "Registered"
+    transaction = "Buy"
+    symbol = "AAPL"
+    quantity = int(100)
+    price = Decimal(95.05)
+    commission = Decimal(9.99)
+    stock = Stock.get_stock_by_symbol(symbol=symbol)
+    fx_symbol = "USDCAD"
+    fx = FX.get_fx_by_symbol(symbol=fx_symbol)
+    if Trade_Log.insert_item(date=date, account=account, transaction=transaction, quantity=quantity,
+            price=price, commission=commission, stock=stock, fx=fx, user=user):
+        db.session.commit()
+
+    user = Users.get_user_by_id(1)
+    date = datetime(2022,1,10)
+    account = "Registered"
+    transaction = "Buy"
+    symbol = "AAPL"
+    quantity = int(200)
+    price = Decimal(110.12)
+    commission = Decimal(9.99)
+    stock = Stock.get_stock_by_symbol(symbol=symbol)
+    fx_symbol = "USDCAD"
+    fx = FX.get_fx_by_symbol(symbol=fx_symbol)
+    if Trade_Log.insert_item(date=date, account=account, transaction=transaction, quantity=quantity,
+            price=price, commission=commission, stock=stock, fx=fx, user=user):
+        db.session.commit()
+
+    user = Users.get_user_by_id(1)
+    date = datetime(2022,1,15)
+    account = "Registered"
+    transaction = "Sell"
+    symbol = "AAPL"
+    quantity = int(50)
+    price = Decimal(130.60)
+    commission = Decimal(9.99)
+    stock = Stock.get_stock_by_symbol(symbol=symbol)
+    fx_symbol = "USDCAD"
+    fx = FX.get_fx_by_symbol(symbol=fx_symbol)
+    if Trade_Log.insert_item(date=date, account=account, transaction=transaction, quantity=quantity,
+            price=price, commission=commission, stock=stock, fx=fx, user=user):
+        db.session.commit()
+    
+    user = Users.get_user_by_id(1)
+    date = datetime(2022,1,18)
+    account = "Registered"
+    transaction = "Buy"
+    symbol = "AAPL"
+    quantity = int(50)
+    price = Decimal(111.60)
+    commission = Decimal(9.99)
+    stock = Stock.get_stock_by_symbol(symbol=symbol)
+    fx_symbol = "USDCAD"
+    fx = FX.get_fx_by_symbol(symbol=fx_symbol)
+    if Trade_Log.insert_item(date=date, account=account, transaction=transaction, quantity=quantity,
+            price=price, commission=commission, stock=stock, fx=fx, user=user):
+        db.session.commit()
+
+    user = Users.get_user_by_id(1)
+    date = datetime(2022,1,20)
+    account = "Registered"
+    transaction = "Buy"
+    symbol = "MSFT"
+    quantity = int(100)
+    price = Decimal(305)
+    commission = Decimal(9.99)
+    stock = Stock.get_stock_by_symbol(symbol=symbol)
+    fx_symbol = "USDCAD"
+    fx = FX.get_fx_by_symbol(symbol=fx_symbol)
+    if Trade_Log.insert_item(date=date, account=account, transaction=transaction, quantity=quantity,
+            price=price, commission=commission, stock=stock, fx=fx, user=user):
+        db.session.commit()
+
+    user = Users.get_user_by_id(1)
+    date = datetime(2022,1,20)
+    account = "Non-Registered"
+    transaction = "Buy"
+    symbol = "GLO.TO"
+    quantity = int(1000)
+    price = Decimal(3.05)
+    commission = Decimal(9.99)
+    stock = Stock.get_stock_by_symbol(symbol=symbol)
+    fx_symbol = "CADCAD"
+    fx = FX.get_fx_by_symbol(symbol=fx_symbol)
+    if Trade_Log.insert_item(date=date, account=account, transaction=transaction, quantity=quantity,
+            price=price, commission=commission, stock=stock, fx=fx, user=user):
+        db.session.commit()
+
+@cli.command("seed_stock_prices")
+def seed_stock_prices():
+
+    # symbol = "GLO-CT"
+    # stock = Stock.get_stock_by_symbol(symbol=symbol)
+    # date = "2022-02-10"
+    # price = 3.5
+    # if Stock_Price.create_stock_price(stock, date, price):
+    #     db.session.commit()
+    
+    # symbol = "MSFT"
+    # stock = Stock.get_stock_by_symbol(symbol=symbol)
+    # date = "2022-02-10"
+    # price = 300
+    # if Stock_Price.create_stock_price(stock, date, price):
+    #     db.session.commit()
+
+    # symbol = "AAPL"
+    # stock = Stock.get_stock_by_symbol(symbol=symbol)
+    # date = "2022-02-10"
+    # price = 200
+    # if Stock_Price.create_stock_price(stock, date, price):
+    #     db.session.commit()
+    Stock_Price.fetch_stock_prices(['AAPL','MSFT','GLO.TO'])
+
+@cli.command("seed_fx_prices")
+def seed_fx_prices():
+    FX_Price.fetch_fx_prices()
+
+@cli.command('test')
+def test():
+    Trade_Log.construct_holdings(1)
 
 if __name__ == "__main__":
     cli()
