@@ -120,14 +120,17 @@ class Stock_Price(db.Model):
 
     @staticmethod
     def fetch_stock_prices(symbols):
+        Stock_Price.query.delete()
+        db.session.commit()
         for symbol in symbols:
             stock = yf.Ticker(symbol)
             stock_h = stock.history(period="max")
             stock_d = stock_h.reset_index()
             stock_d['symbol'] = symbol
-            stock_d = stock_d[['Close', 'symbol', 'Date']]
+            stock_d = stock_d.set_index('symbol')
+            stock_d = stock_d[['Close', 'Date']]
             stock_d = stock_d.rename(columns={'Close':'price', 'Date':'date'})
-            stock_d.to_sql('stock_price', db.session.bind, if_exists='replace')
+            stock_d.to_sql('stock_price', db.session.bind, if_exists='append')
         return True
     
     @property
@@ -216,9 +219,10 @@ class FX_Price(db.Model):
         usdcad_h = usdcad.history(period="max")
         usdcad_d = usdcad_h.reset_index()
         usdcad_d['symbol'] = "USDCAD"
-        usdcad_d = usdcad_d[['Close', 'symbol', 'Date']]
+        usdcad_d = usdcad_d.set_index('symbol')
+        usdcad_d = usdcad_d[['Close', 'Date']]
         usdcad_d = usdcad_d.rename(columns={'Close':'price', 'Date':'date'})
-        usdcad_d.to_sql('fx_price', db.session.bind, if_exists='replace')
+        usdcad_d.to_sql('fx_price', db.session.bind, if_exists='append')
         return True
     
     @property

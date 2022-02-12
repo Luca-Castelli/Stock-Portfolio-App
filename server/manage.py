@@ -71,7 +71,7 @@ def seed_fx():
 def seed_trade_log():
 
     user = Users.get_user_by_id(1)
-    date = datetime(2022,1,1)
+    date = datetime(2022,1,4)
     account = "Registered"
     transaction = "Buy"
     symbol = "AAPL"
@@ -101,7 +101,7 @@ def seed_trade_log():
         db.session.commit()
 
     user = Users.get_user_by_id(1)
-    date = datetime(2022,1,15)
+    date = datetime(2022,1,17)
     account = "Registered"
     transaction = "Sell"
     symbol = "AAPL"
@@ -159,6 +159,22 @@ def seed_trade_log():
     if Trade_Log.insert_item(date=date, account=account, transaction=transaction, quantity=quantity,
             price=price, commission=commission, stock=stock, fx=fx, user=user):
         db.session.commit()
+    
+    user = Users.get_user_by_id(1)
+    date = datetime(2022,2,11)
+    account = "Registered"
+    transaction = "Dividend"
+    symbol = "AAPL"
+    quantity = int(1)
+    price = Decimal(50)
+    commission = Decimal(0)
+    stock = Stock.get_stock_by_symbol(symbol=symbol)
+    fx_symbol = "USDCAD"
+    fx = FX.get_fx_by_symbol(symbol=fx_symbol)
+    if Trade_Log.insert_item(date=date, account=account, transaction=transaction, quantity=quantity,
+            price=price, commission=commission, stock=stock, fx=fx, user=user):
+        db.session.commit()
+
 
 @cli.command("seed_stock_prices")
 def seed_stock_prices():

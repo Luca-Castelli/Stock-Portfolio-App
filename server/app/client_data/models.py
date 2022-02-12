@@ -1,4 +1,6 @@
 from ast import Num
+from datetime import datetime
+from pytz import timezone
 from decimal import Decimal
 from sqlalchemy import Column, Integer, String, Numeric, DateTime, ForeignKey
 from sqlalchemy.sql import func
@@ -148,32 +150,81 @@ class Trade_Log(db.Model):
         return True
 
     @staticmethod
-    def construct_holdings(user_id):
+    def construct_holdings(user_id, valuation_date=None):
 
         trade_log = pd.read_sql(Trade_Log.query.filter_by(user_id=user_id).statement, db.session.bind)
 
+        if valuation_date != None:
+            trade_log = trade_log[trade_log['date'] <= valuation_date]
+        else:
+            tz = timezone('EST')
+            dt = datetime.now(tz)
+            valuation_date = datetime(dt.year, dt.month, dt.day) - pd.tseries.offsets.BDay(1)
+
+        fx = pd.read_sql(FX_Price.query.statement, db.session.bind)
+
+        trade_log = trade_log.merge(fx, how='left', left_on=['date', 'fx_symbol'], right_on=['date', 'symbol'], suffixes=(None, '_fx'))
+        trade_log['price_fx'].fillna(1, inplace=True)
+
         trade_log.sort_values(['account', 'symbol', 'date'], ascending=[True, True, True], inplace=True)
-        trade_log['cad_total_amt'] = trade_log.apply(lambda x: ((x['quantity'] * x['price']) + x['commission']), axis = 1)
+        trade_log['src_total_amt'] = trade_log.apply(lambda x: ((x['quantity'] * x['price']) + x['commission']), axis = 1)
+        trade_log['src_total_amt_ps'] = trade_log['src_total_amt'] / trade_log['quantity']
+        trade_log['cad_total_amt'] = trade_log.apply(lambda x: ((x['quantity'] * x['price']) + x['commission']) * x['price_fx'], axis = 1)
         trade_log['cad_total_amt_ps'] = trade_log['cad_total_amt'] / trade_log['quantity']
         trade_log['adj_qty'] = trade_log.apply(lambda x: ((x['transaction'] == "Buy") - (x['transaction'] == "Sell")) * x['quantity'], axis = 1)
         trade_log['cum_qty'] = trade_log.groupby(['account','symbol'])['adj_qty'].cumsum()
-        trade_log['cum_buys'] = trade_log[trade_log["transaction"] == "Buy"].groupby(['account', 'symbol'])['cad_total_amt'].cumsum()
-        trade_log['cum_buys_ps'] = trade_log['cum_buys'] / trade_log['cum_qty']
+        trade_log['src_cum_buys'] = trade_log[trade_log["transaction"] == "Buy"].groupby(['account', 'symbol'])['src_total_amt'].cumsum()
+        trade_log['src_cum_buys_ps'] = trade_log['src_cum_buys'] / trade_log['cum_qty']
+        trade_log['cad_cum_buys'] = trade_log[trade_log["transaction"] == "Buy"].groupby(['account', 'symbol'])['cad_total_amt'].cumsum()
+        trade_log['cad_cum_buys_ps'] = trade_log['cad_cum_buys'] / trade_log['cum_qty']
         trade_log['pre_qty'] = trade_log.groupby(['account','symbol'])['cum_qty'].shift()
-        trade_log['pre_acb'] = trade_log.groupby(['account', 'symbol', 'transaction'])['cum_buys'].shift()
-        trade_log['pre_acb_ps'] = trade_log.groupby(['account', 'symbol', 'transaction'])['cum_buys_ps'].shift()
+        trade_log['src_pre_acb'] = trade_log.groupby(['account', 'symbol', 'transaction'])['src_cum_buys'].shift()
+        trade_log['src_pre_acb_ps'] = trade_log.groupby(['account', 'symbol', 'transaction'])['src_cum_buys_ps'].shift()
+        trade_log['cad_pre_acb'] = trade_log.groupby(['account', 'symbol', 'transaction'])['cad_cum_buys'].shift()
+        trade_log['cad_pre_acb_ps'] = trade_log.groupby(['account', 'symbol', 'transaction'])['cad_cum_buys_ps'].shift()
         trade_log['post_qty'] = trade_log['cum_qty']
-        trade_log['post_acb'] = trade_log['pre_acb_ps'] * trade_log['pre_qty'] + trade_log['cad_total_amt']
-        trade_log['post_acb_ps'] = trade_log['post_acb'].divide(trade_log['post_qty']).fillna(trade_log['cum_buys_ps'])
-        trade_log['post_acb_ps'].fillna(method='ffill', inplace=True)
-        trade_log['pre_acb_ps'].fillna(trade_log['post_acb_ps'], inplace=True)
+        trade_log['src_post_acb'] = trade_log['src_pre_acb_ps'] * trade_log['pre_qty'] + trade_log['src_total_amt']
+        trade_log['cad_post_acb'] = trade_log['cad_pre_acb_ps'] * trade_log['pre_qty'] + trade_log['cad_total_amt']
+        trade_log['src_post_acb_ps'] = trade_log['src_post_acb'].divide(trade_log['post_qty']).fillna(trade_log['src_cum_buys_ps'])
+        trade_log['src_post_acb_ps'].fillna(method='ffill', inplace=True)
+        trade_log['src_pre_acb_ps'].fillna(trade_log['src_post_acb_ps'], inplace=True)
+        trade_log['cad_post_acb_ps'] = trade_log['cad_post_acb'].divide(trade_log['post_qty']).fillna(trade_log['cad_cum_buys_ps'])
+        trade_log['cad_post_acb_ps'].fillna(method='ffill', inplace=True)
+        trade_log['cad_pre_acb_ps'].fillna(trade_log['cad_post_acb_ps'], inplace=True) 
+        trade_log['src_post_acb'] = trade_log['src_post_acb_ps'] * trade_log['post_qty']
+        trade_log['cad_post_acb'] = trade_log['cad_post_acb_ps'] * trade_log['post_qty']
+        trade_log['acb_fx'] = trade_log['cad_post_acb_ps'] / trade_log['src_post_acb_ps']
+        trade_log['src_realized_gain_sell'] = trade_log[trade_log["transaction"] == "Sell"].apply(lambda x: (x['price'] - x['src_post_acb_ps']) * x['quantity'] , axis=1)
+        trade_log['src_realized_gain_dividend'] = trade_log[trade_log["transaction"] == "Dividend"].apply(lambda x: x['price'], axis=1)
+        trade_log['cad_realized_gain_sell_fx'] = trade_log[trade_log["transaction"] == "Sell"].apply(lambda x: (x['price_fx'] - x['acb_fx']) * x['src_realized_gain_sell'] , axis=1)
+        trade_log['cad_realized_gain_sell'] = trade_log[trade_log["transaction"] == "Sell"].apply(lambda x: x['src_realized_gain_sell'] * x['price_fx'] - x['cad_realized_gain_sell_fx'], axis=1)
+        trade_log['cad_realized_gain_dividend'] = trade_log[trade_log["transaction"] == "Dividend"].apply(lambda x: x['price'] * x['price_fx'], axis=1)
 
-        stock_price = pd.read_sql(Stock_Price.query.statement, db.session.bind)
-        fx = pd.read_sql(FX_Price.query.statement, db.session.bind)
-
-        trade_log = trade_log[['date', 'account', 'transaction', 'symbol', 'quantity', 'price', 'commission', 'pre_qty', 'post_qty', 'pre_acb_ps', 'post_acb_ps']]
+        # trade_log = trade_log[['date', 'account', 'transaction', 'symbol', 'quantity', 'price', 'commission', 'pre_qty', 'post_qty', 'pre_acb_ps', 'post_acb_ps', 'post_acb', 'realized_gain']]
 
         print(trade_log)
+
+        holdings = trade_log.sort_values('date').drop_duplicates(['account', 'symbol'], keep='last')
+        holdings = holdings[['account', 'symbol', 'fx_symbol', 'post_qty', 'src_post_acb_ps', 'cad_post_acb_ps', 'src_post_acb', 'cad_post_acb']].sort_values(['account', 'symbol']).reset_index()
+        holdings['src_realized_gain_sell'] = trade_log.sort_values(['account', 'symbol']).groupby(['account', 'symbol']).sum().reset_index()['src_realized_gain_sell']
+        holdings['src_realized_gain_dividend'] = trade_log.sort_values(['account', 'symbol']).groupby(['account', 'symbol']).sum().reset_index()['src_realized_gain_dividend']
+        holdings['cad_realized_gain_sell'] = trade_log.sort_values(['account', 'symbol']).groupby(['account', 'symbol']).sum().reset_index()['cad_realized_gain_sell']
+        holdings['cad_realized_gain_dividend'] = trade_log.sort_values(['account', 'symbol']).groupby(['account', 'symbol']).sum().reset_index()['cad_realized_gain_dividend']
+
+        stock_price = pd.read_sql(Stock_Price.query.filter_by(date=valuation_date).statement, db.session.bind)
+        holdings_stock = holdings.merge(stock_price, how='left', left_on=['symbol'], right_on=['symbol'], suffixes=(None, '_stock'))
+
+        fx = pd.read_sql(FX_Price.query.filter_by(date=valuation_date).statement, db.session.bind)
+        holdings_stock_fx = holdings_stock.merge(fx, how='left', left_on=['fx_symbol'], right_on=['symbol'], suffixes=(None, '_fx'))
+        holdings_stock_fx['price_fx'].fillna(1, inplace=True)
+        
+        holdings_stock_fx = holdings_stock_fx[['account', 'symbol', 'post_qty', 'src_post_acb_ps', 'cad_post_acb_ps', 'src_post_acb', 'cad_post_acb', 'src_realized_gain_sell', 'src_realized_gain_dividend', 'cad_realized_gain_sell', 'cad_realized_gain_dividend', 'price', 'price_fx']]
+        # print(holdings_stock_fx)
+
+        # calculate unrealized pnl
+
+
+
 
     @property
     def serialize(self):
