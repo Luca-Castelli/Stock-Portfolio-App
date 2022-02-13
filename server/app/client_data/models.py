@@ -197,17 +197,12 @@ class Trade_Log(db.Model):
         trade_log['src_realized_gain_sell'] = trade_log[trade_log["transaction"] == "Sell"].apply(lambda x: (x['price'] - x['src_post_acb_ps']) * x['quantity'] , axis=1)
         trade_log['src_realized_gain_dividend'] = trade_log[trade_log["transaction"] == "Dividend"].apply(lambda x: x['price'], axis=1)
         trade_log['cad_realized_gain_sell_fx'] = trade_log[trade_log["transaction"] == "Sell"].apply(lambda x: (x['price_fx'] - x['acb_fx']) * x['src_realized_gain_sell'] , axis=1)
-        trade_log['cad_realized_gain_sell'] = trade_log[trade_log["transaction"] == "Sell"].apply(lambda x: x['src_realized_gain_sell'] * x['price_fx'] - x['cad_realized_gain_sell_fx'], axis=1)
+        trade_log['cad_realized_gain_sell'] = trade_log[trade_log["transaction"] == "Sell"].apply(lambda x: x['src_realized_gain_sell'] * x['price_fx'], axis=1)
         trade_log['cad_realized_gain_dividend'] = trade_log[trade_log["transaction"] == "Dividend"].apply(lambda x: x['price'] * x['price_fx'], axis=1)
 
-        # trade_log = trade_log[['date', 'account', 'transaction', 'symbol', 'quantity', 'price', 'commission', 'pre_qty', 'post_qty', 'pre_acb_ps', 'post_acb_ps', 'post_acb', 'realized_gain']]
-
-        print(trade_log)
-
         holdings = trade_log.sort_values('date').drop_duplicates(['account', 'symbol'], keep='last')
-        holdings = holdings[['account', 'symbol', 'fx_symbol', 'post_qty', 'src_post_acb_ps', 'cad_post_acb_ps', 'src_post_acb', 'cad_post_acb']].sort_values(['account', 'symbol']).reset_index()
-        holdings['src_realized_gain_sell'] = trade_log.sort_values(['account', 'symbol']).groupby(['account', 'symbol']).sum().reset_index()['src_realized_gain_sell']
-        holdings['src_realized_gain_dividend'] = trade_log.sort_values(['account', 'symbol']).groupby(['account', 'symbol']).sum().reset_index()['src_realized_gain_dividend']
+        holdings = holdings[['account', 'symbol', 'fx_symbol', 'post_qty', 'src_post_acb_ps', 'cad_post_acb_ps', 'src_post_acb', 'cad_post_acb', 'acb_fx']].sort_values(['account', 'symbol']).reset_index()
+        holdings['cad_realized_gain_sell_fx'] = trade_log.sort_values(['account', 'symbol']).groupby(['account', 'symbol']).sum().reset_index()['cad_realized_gain_sell_fx']
         holdings['cad_realized_gain_sell'] = trade_log.sort_values(['account', 'symbol']).groupby(['account', 'symbol']).sum().reset_index()['cad_realized_gain_sell']
         holdings['cad_realized_gain_dividend'] = trade_log.sort_values(['account', 'symbol']).groupby(['account', 'symbol']).sum().reset_index()['cad_realized_gain_dividend']
 
@@ -218,11 +213,11 @@ class Trade_Log(db.Model):
         holdings_stock_fx = holdings_stock.merge(fx, how='left', left_on=['fx_symbol'], right_on=['symbol'], suffixes=(None, '_fx'))
         holdings_stock_fx['price_fx'].fillna(1, inplace=True)
         
-        holdings_stock_fx = holdings_stock_fx[['account', 'symbol', 'post_qty', 'src_post_acb_ps', 'cad_post_acb_ps', 'src_post_acb', 'cad_post_acb', 'src_realized_gain_sell', 'src_realized_gain_dividend', 'cad_realized_gain_sell', 'cad_realized_gain_dividend', 'price', 'price_fx']]
-        # print(holdings_stock_fx)
+        holdings_stock_fx = holdings_stock_fx[['account', 'symbol', 'post_qty', 'src_post_acb_ps', 'cad_post_acb_ps', 'src_post_acb', 'cad_post_acb', 'acb_fx', 'cad_realized_gain_sell_fx', 'cad_realized_gain_sell', 'cad_realized_gain_dividend', 'price', 'price_fx']]
+        print(holdings_stock_fx)
 
         # calculate unrealized pnl
-
+        holdings['src_unrealized_gain'] = holdings.apply(lambda x: (x['price'] - x['src_post_acb_ps']) * x['quantity'] , axis=1)
 
 
 
