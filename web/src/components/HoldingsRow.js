@@ -1,42 +1,68 @@
 import React from "react";
-import HoldingsRowDisplay from "./HoldingsRowDisplay";
+import NumberDisplay from "./NumberDisplay";
 
 function HoldingsRow({ item }) {
   const {
     id,
     account,
     symbol,
-    quantity,
-    average_cost_basis,
-    average_cost_basis_ps,
-    realized_pnl,
-    dividends,
-    latest_price,
-    market_value,
     weight,
-    unrealized_pnl,
-    unrealized_pnl_percent,
+    post_qty,
+    src_post_acb_ps,
+    price,
+    src_post_acb,
+    src_market_value,
+    cad_unrealized_gain,
+    cad_unrealized_gain_fx,
+    cad_unrealized_gain_percent,
+    cad_realized_gain_dividend,
+    cad_realized_gain_sell,
+    cad_realized_gain_sell_fx,
   } = item;
 
   return (
     <tr className="border-y text-xs dark: border-slate-700 text-white">
       <td className="pl-2">{account}</td>
       <td className="pl-2">{symbol}</td>
-      <HoldingsRowDisplay value={weight} digits={0} isPercent={true} />
-      <HoldingsRowDisplay value={quantity} digits={0} />
-      <HoldingsRowDisplay value={average_cost_basis_ps} digits={2} />
-      <HoldingsRowDisplay value={latest_price} digits={2} />
-      <HoldingsRowDisplay value={average_cost_basis} digits={0} />
-      <HoldingsRowDisplay value={market_value} digits={0} />
-      <HoldingsRowDisplay value={unrealized_pnl} digits={0} isColor={true} />
-      <HoldingsRowDisplay
-        value={unrealized_pnl_percent}
-        digits={0}
-        isPercent={true}
-        isColor={true}
-      />
-      <HoldingsRowDisplay value={dividends} digits={0} />
-      <HoldingsRowDisplay value={realized_pnl} digits={0} isColor={true} />
+      <td>
+        <NumberDisplay value={weight} digits={0} isPercent={true} />
+      </td>
+      <td>
+        <NumberDisplay value={post_qty} digits={0} />
+      </td>
+      <td>
+        <NumberDisplay value={src_post_acb_ps} digits={2} />
+      </td>
+      <td>
+        <NumberDisplay value={price} digits={2} />
+      </td>
+      <td>
+        <NumberDisplay value={src_post_acb} digits={0} />
+      </td>
+      <td>
+        <NumberDisplay value={src_market_value} digits={0} />
+      </td>
+      <td>
+        <NumberDisplay value={cad_unrealized_gain} digits={0} isColor={true} />
+      </td>
+      <td>
+        <NumberDisplay
+          value={cad_unrealized_gain_percent}
+          digits={0}
+          isPercent={true}
+          isColor={true}
+        />
+      </td>
+      <td>
+        <NumberDisplay value={cad_realized_gain_dividend} digits={0} />
+      </td>
+      <td>
+        <NumberDisplay
+          value={cad_realized_gain_sell}
+          digits={0}
+          isColor={true}
+        />
+      </td>
     </tr>
   );
 }

@@ -30,38 +30,39 @@ def seed_users():
 
 @cli.command("seed_stocks")
 def seed_stocks():
-    symbol = "AAPL"
-    exchange = "NYSE"
-    exchange_name = "New York Stock Exchange"
-    name = "Apple Inc."
-    type = "cs"
-    region = "US"
-    currency = "USD"
-    stock = Stock(symbol, exchange, exchange_name, name, type, region, currency)
-    db.session.add(stock)
-    db.session.commit()
+    # symbol = "AAPL"
+    # exchange = "NYSE"
+    # exchange_name = "New York Stock Exchange"
+    # name = "Apple Inc."
+    # type = "cs"
+    # region = "US"
+    # currency = "USD"
+    # stock = Stock(symbol, exchange, exchange_name, name, type, region, currency)
+    # db.session.add(stock)
+    # db.session.commit()
 
-    symbol = "MSFT"
-    exchange = "NYSE"
-    exchange_name = "New York Stock Exchange"
-    name = "Microsoft Inc."
-    type = "cs"
-    region = "US"
-    currency = "USD"
-    stock = Stock(symbol, exchange, exchange_name, name, type, region, currency)
-    db.session.add(stock)
-    db.session.commit()
+    # symbol = "MSFT"
+    # exchange = "NYSE"
+    # exchange_name = "New York Stock Exchange"
+    # name = "Microsoft Inc."
+    # type = "cs"
+    # region = "US"
+    # currency = "USD"
+    # stock = Stock(symbol, exchange, exchange_name, name, type, region, currency)
+    # db.session.add(stock)
+    # db.session.commit()
 
-    symbol = "GLO.TO"
-    exchange = "TSX"
-    exchange_name = "Toronto Stock Exchange"
-    name = "Global Atomic Corp."
-    type = "cs"
-    region = "CA"
-    currency = "CAD"
-    stock = Stock(symbol, exchange, exchange_name, name, type, region, currency)
-    db.session.add(stock)
-    db.session.commit()
+    # symbol = "GLO.TO"
+    # exchange = "TSX"
+    # exchange_name = "Toronto Stock Exchange"
+    # name = "Global Atomic Corp."
+    # type = "cs"
+    # region = "CA"
+    # currency = "CAD"
+    # stock = Stock(symbol, exchange, exchange_name, name, type, region, currency)
+    # db.session.add(stock)
+    # db.session.commit()
+    Stock.populate_stocks()
 
 @cli.command("seed_fx")
 def seed_fx():
@@ -178,7 +179,6 @@ def seed_trade_log():
 
 @cli.command("seed_stock_prices")
 def seed_stock_prices():
-
     # symbol = "GLO-CT"
     # stock = Stock.get_stock_by_symbol(symbol=symbol)
     # date = "2022-02-10"
@@ -199,7 +199,7 @@ def seed_stock_prices():
     # price = 200
     # if Stock_Price.create_stock_price(stock, date, price):
     #     db.session.commit()
-    Stock_Price.fetch_stock_prices(['AAPL','MSFT','GLO.TO'])
+    Stock_Price.fetch_stock_prices(Trade_Log.get_distinct_symbols())
 
 @cli.command("seed_fx_prices")
 def seed_fx_prices():
@@ -207,7 +207,12 @@ def seed_fx_prices():
 
 @cli.command('test')
 def test():
-    Trade_Log.construct_holdings(1)
+    Trade_Log.calculate_holdings_return(1, from_date=datetime(2021,12,31))
+
+@cli.command('test2')
+def test2():
+    for stock in Stock.get_US_canadian_symbols():
+        print(stock.symbol)
 
 if __name__ == "__main__":
     cli()

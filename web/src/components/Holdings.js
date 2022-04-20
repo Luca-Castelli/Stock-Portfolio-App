@@ -89,82 +89,82 @@ function Holdings() {
             </th>
             <th className="pl-2">
               <button
-                onClick={() => requestSort("quantity")}
+                onClick={() => requestSort("post_qty")}
                 className="inline-flex text-left"
               >
                 Quantity
-                {getSortArrow("quantity")}
+                {getSortArrow("post_qty")}
               </button>
             </th>
             <th className="pl-2">
               <button
-                onClick={() => requestSort("average_cost_basis_ps")}
+                onClick={() => requestSort("src_post_acb_ps")}
                 className="inline-flex text-left"
               >
                 Cost Base
-                {getSortArrow("average_cost_basis_ps")}
+                {getSortArrow("src_post_acb_ps")}
               </button>
             </th>
             <th className="pl-2">
               <button
-                onClick={() => requestSort("latest_price")}
+                onClick={() => requestSort("price")}
                 className="inline-flex text-left"
               >
                 Last Price
-                {getSortArrow("latest_price")}
+                {getSortArrow("price")}
               </button>
             </th>
             <th className="pl-2">
               <button
-                onClick={() => requestSort("average_cost_basis")}
+                onClick={() => requestSort("src_post_acb")}
                 className="inline-flex text-left"
               >
                 Book Value
-                {getSortArrow("average_cost_basis")}
+                {getSortArrow("src_post_acb")}
               </button>
             </th>
             <th className="pl-2">
               <button
-                onClick={() => requestSort("market_value")}
+                onClick={() => requestSort("src_market_value")}
                 className="inline-flex text-left"
               >
                 Market Value
-                {getSortArrow("market_value")}
+                {getSortArrow("src_market_value")}
               </button>
             </th>
             <th className="pl-2">
               <button
-                onClick={() => requestSort("unrealized_pnl")}
+                onClick={() => requestSort("cad_unrealized_gain")}
                 className="inline-flex text-left"
               >
                 Unrealized PnL
-                {getSortArrow("unrealized_pnl")}
+                {getSortArrow("cad_unrealized_gain")}
               </button>
             </th>
             <th className="pl-2">
               <button
-                onClick={() => requestSort("unrealized_pnl_percent")}
+                onClick={() => requestSort("cad_unrealized_gain_percent")}
                 className="inline-flex text-left"
               >
-                Unrealized PnL %{getSortArrow("unrealized_pnl_percent")}
+                Unrealized PnL %{getSortArrow("cad_unrealized_gain_percent")}
               </button>
             </th>
             <th className="pl-2">
               <button
-                onClick={() => requestSort("dividends")}
+                onClick={() => requestSort("cad_realized_gain_dividend")}
                 className="inline-flex text-left"
               >
                 Dividends
-                {getSortArrow("dividends")}
+                {getSortArrow("cad_realized_gain_dividend")}
               </button>
             </th>
-            <th className="pl-2 rounded-r-lg">
+            <th className="pl-2">
               <button
-                onClick={() => requestSort("realized_pnl")}
+                onClick={() => requestSort("cad_realized_gain_sell")}
                 className="inline-flex text-left"
               >
                 Realized PnL
-                {getSortArrow("realized_pnl")}
+                {getSortArrow("cad_realized_gain_sell")}
               </button>
             </th>
           </tr>

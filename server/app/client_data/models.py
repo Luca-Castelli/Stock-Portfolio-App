@@ -1,5 +1,6 @@
 from ast import Num
 from datetime import datetime
+from re import T
 from pytz import timezone
 from decimal import Decimal
 from sqlalchemy import Column, Integer, String, Numeric, DateTime, ForeignKey
@@ -62,10 +63,8 @@ class Trade_Log(db.Model):
             return False
 
     def delete_item(self):
-
         if not Trade_Log.is_valid_transaction(operation="Remove", user_id=self.user_id, date=self.date, account=self.account, transaction=self.transaction, symbol=self.symbol, quantity=self.quantity):
             return False
-
         try:
             Trade_Log.query.filter_by(id=self.id).delete()
             return True
@@ -78,7 +77,17 @@ class Trade_Log(db.Model):
 
     @staticmethod
     def get_distinct_symbols_for_user(user_id):
-        return db.session.query(Trade_Log).filter(Trade_Log.user_id==user_id).distinct(Trade_Log.symbol).group_by(Trade_Log.symbol).count()
+        symbols = []
+        for value in db.session.query(Trade_Log.symbol).filter(Trade_Log.user_id==user_id).distinct():
+            symbols.append(value[0])
+        return symbols
+    
+    @staticmethod
+    def get_distinct_symbols():
+        symbols = []
+        for value in db.session.query(Trade_Log.symbol).distinct():
+            symbols.append(value[0])
+        return symbols  
 
     @staticmethod
     def get_trade_log_by_id(trade_id):
@@ -154,15 +163,17 @@ class Trade_Log(db.Model):
 
         trade_log = pd.read_sql(Trade_Log.query.filter_by(user_id=user_id).statement, db.session.bind)
 
-        if valuation_date != None:
-            trade_log = trade_log[trade_log['date'] <= valuation_date]
-        else:
+        if not valuation_date:
             tz = timezone('EST')
             dt = datetime.now(tz)
-            valuation_date = datetime(dt.year, dt.month, dt.day) - pd.tseries.offsets.BDay(1)
+            valuation_date = datetime(dt.year, dt.month, dt.day) - pd.tseries.offsets.BDay(0)
+
+        trade_log = trade_log[trade_log['date'] <= valuation_date]
+
+        if trade_log.empty:
+            return trade_log
 
         fx = pd.read_sql(FX_Price.query.statement, db.session.bind)
-
         trade_log = trade_log.merge(fx, how='left', left_on=['date', 'fx_symbol'], right_on=['date', 'symbol'], suffixes=(None, '_fx'))
         trade_log['price_fx'].fillna(1, inplace=True)
 
@@ -194,11 +205,27 @@ class Trade_Log(db.Model):
         trade_log['src_post_acb'] = trade_log['src_post_acb_ps'] * trade_log['post_qty']
         trade_log['cad_post_acb'] = trade_log['cad_post_acb_ps'] * trade_log['post_qty']
         trade_log['acb_fx'] = trade_log['cad_post_acb_ps'] / trade_log['src_post_acb_ps']
-        trade_log['src_realized_gain_sell'] = trade_log[trade_log["transaction"] == "Sell"].apply(lambda x: (x['price'] - x['src_post_acb_ps']) * x['quantity'] , axis=1)
-        trade_log['src_realized_gain_dividend'] = trade_log[trade_log["transaction"] == "Dividend"].apply(lambda x: x['price'], axis=1)
-        trade_log['cad_realized_gain_sell_fx'] = trade_log[trade_log["transaction"] == "Sell"].apply(lambda x: (x['price_fx'] - x['acb_fx']) * x['src_realized_gain_sell'] , axis=1)
-        trade_log['cad_realized_gain_sell'] = trade_log[trade_log["transaction"] == "Sell"].apply(lambda x: x['src_realized_gain_sell'] * x['price_fx'], axis=1)
-        trade_log['cad_realized_gain_dividend'] = trade_log[trade_log["transaction"] == "Dividend"].apply(lambda x: x['price'] * x['price_fx'], axis=1)
+
+        try:
+            trade_log['src_realized_gain_sell'] = trade_log[trade_log["transaction"] == "Sell"].apply(lambda x: (x['price'] - x['src_post_acb_ps']) * x['quantity'] - x['commission'] , axis=1)
+        except:
+            trade_log['src_realized_gain_sell'] = np.NaN
+        try:
+            trade_log['src_realized_gain_dividend'] = trade_log[trade_log["transaction"] == "Dividend"].apply(lambda x: x['price'], axis=1)
+        except:
+            trade_log['src_realized_gain_dividend'] = np.NaN
+        try: 
+            trade_log['cad_realized_gain_sell_fx'] = trade_log[trade_log["transaction"] == "Sell"].apply(lambda x: (x['price_fx'] - x['acb_fx']) * x['src_realized_gain_sell'] , axis=1)
+        except:
+            trade_log['cad_realized_gain_sell_fx'] =np.NaN
+        try:
+            trade_log['cad_realized_gain_sell'] = trade_log[trade_log["transaction"] == "Sell"].apply(lambda x: x['src_realized_gain_sell'] * x['price_fx'], axis=1)
+        except:
+            trade_log['cad_realized_gain_sell'] = np.NaN
+        try:
+            trade_log['cad_realized_gain_dividend'] = trade_log[trade_log["transaction"] == "Dividend"].apply(lambda x: x['price'] * x['price_fx'], axis=1)
+        except:
+            trade_log['cad_realized_gain_dividend'] = np.NaN
 
         holdings = trade_log.sort_values('date').drop_duplicates(['account', 'symbol'], keep='last')
         holdings = holdings[['account', 'symbol', 'fx_symbol', 'post_qty', 'src_post_acb_ps', 'cad_post_acb_ps', 'src_post_acb', 'cad_post_acb', 'acb_fx']].sort_values(['account', 'symbol']).reset_index()
@@ -214,12 +241,79 @@ class Trade_Log(db.Model):
         holdings_stock_fx['price_fx'].fillna(1, inplace=True)
         
         holdings_stock_fx = holdings_stock_fx[['account', 'symbol', 'post_qty', 'src_post_acb_ps', 'cad_post_acb_ps', 'src_post_acb', 'cad_post_acb', 'acb_fx', 'cad_realized_gain_sell_fx', 'cad_realized_gain_sell', 'cad_realized_gain_dividend', 'price', 'price_fx']]
-        print(holdings_stock_fx)
+
+        # calculate market value
+        holdings_stock_fx['src_market_value'] = holdings_stock_fx.apply(lambda x: x['price'] * x['post_qty'] , axis=1)
+        holdings_stock_fx['cad_market_value'] = holdings_stock_fx.apply(lambda x: (x['price'] * x['post_qty']) * x['price_fx'], axis=1)
 
         # calculate unrealized pnl
-        holdings['src_unrealized_gain'] = holdings.apply(lambda x: (x['price'] - x['src_post_acb_ps']) * x['quantity'] , axis=1)
+        holdings_stock_fx['src_unrealized_gain'] = holdings_stock_fx.apply(lambda x: x['src_market_value'] - x['src_post_acb'] , axis=1)
+        holdings_stock_fx['cad_unrealized_gain_fx'] = holdings_stock_fx.apply(lambda x: (x['price_fx'] - x['acb_fx']) * x['src_unrealized_gain'] , axis=1)
+        holdings_stock_fx['cad_unrealized_gain'] = holdings_stock_fx.apply(lambda x: x['cad_market_value'] - x['cad_post_acb'], axis=1)
 
+        # calculate unrealized pnl %
+        try:
+            holdings_stock_fx['cad_unrealized_gain_percent'] = holdings_stock_fx.apply(lambda x: (x['cad_unrealized_gain'] / x['cad_post_acb']) * 100, axis=1)
+        except:
+            holdings_stock_fx['cad_unrealized_gain_percent'] = 0
+            
+        # calculate total value
+        cad_total_value = holdings_stock_fx['cad_market_value'].sum()
 
+        # calculate weight
+        holdings_stock_fx['weight'] = holdings_stock_fx.apply(lambda x: (x['cad_market_value'] / cad_total_value) * 100 , axis=1)
+
+        return holdings_stock_fx
+
+    @staticmethod
+    def calculate_holdings_return(user_id, from_date, to_date=None):
+
+        if not to_date:
+            tz = timezone('EST')
+            dt = datetime.now(tz)
+            to_date = datetime(dt.year, dt.month, dt.day) - pd.tseries.offsets.BDay(0)
+
+        trade_log = pd.read_sql(Trade_Log.query.filter_by(user_id=user_id).statement, db.session.bind)
+        trade_log_period = trade_log[trade_log['date'] > from_date]
+        trade_log_period = trade_log_period[trade_log_period['date'] <= to_date]
+
+        fx = pd.read_sql(FX_Price.query.filter_by(date=from_date).statement, db.session.bind)
+        trade_log_period = trade_log_period.merge(fx, how='left', left_on=['fx_symbol'], right_on=['symbol'], suffixes=(None, '_fx'))
+        trade_log_period['price_fx'].fillna(1, inplace=True)
+
+        try:
+            trade_log_period['cad_buys'] = trade_log_period[trade_log_period["transaction"] == "Buy"].apply(lambda x: x['price_fx'] * (x['price'] * x['quantity'] + x['commission']), axis=1)
+        except:
+            trade_log_period['cad_buys'] = np.NaN
+        try:
+            trade_log_period['cad_sells'] = trade_log_period[trade_log_period["transaction"] == "Sell"].apply(lambda x: x['price_fx'] * (x['price'] * x['quantity'] - x['commission']), axis=1)
+        except:
+            trade_log_period['cad_sells'] = np.NaN
+        try:
+            trade_log_period['cad_divs'] = trade_log_period[trade_log_period["transaction"] == "Dividend"].apply(lambda x: x['price_fx'] * x['price'], axis=1)
+        except:
+            trade_log_period['cad_divs'] = np.NaN
+
+        contributions = trade_log_period['cad_buys'].sum()
+        withdrawls = trade_log_period['cad_sells'].sum()
+        dividends = trade_log_period['cad_divs'].sum()
+
+        t0_holdings = Trade_Log.construct_holdings(user_id=user_id, valuation_date=from_date)
+        try:
+            t0_cad_market_value = t0_holdings['cad_market_value'].sum()
+        except:
+            t0_cad_market_value = 0
+
+        t1_holdings = Trade_Log.construct_holdings(user_id=user_id, valuation_date=to_date)
+        try:
+            t1_cad_market_value = t1_holdings['cad_market_value'].sum()
+        except:
+            t1_cad_market_value = 0
+    
+        return_period = t1_cad_market_value - t0_cad_market_value - contributions + withdrawls + dividends
+        return_period_percent = (return_period / (t0_cad_market_value + contributions)) * 100
+
+        return return_period, return_period_percent
 
     @property
     def serialize(self):
@@ -232,172 +326,6 @@ class Trade_Log(db.Model):
             'quantity'      : f'{self.quantity}',
             'price'         : f'{self.price}',
             'commission'    : f'{self.commission}',
-            'fx'            : self.fx,
+            'fx_symbol'     : self.fx_symbol,
             'user_id'       : self.user_id
         }
-
-# class Holding(db.Model):
-
-#     __tablename__ = "holding"
-
-#     id = Column(Integer, primary_key=True)
-#     account = Column(String(128), nullable=False)
-#     symbol = Column(String(128), ForeignKey('stock.symbol'), nullable=False)
-#     quantity = Column(Integer, nullable=False)
-#     average_cost_basis = Column(Numeric(15,2), nullable=False)
-#     average_cost_basis_ps = Column(Numeric(15,2), nullable=False)
-#     realized_pnl = Column(Numeric(15,2), nullable=False)
-#     dividends = Column(Numeric(15,2), nullable=False)
-#     user_id = Column(Integer, ForeignKey('users.id'), nullable=False)
-
-#     def __init__(self, account, quantity, average_cost_basis, average_cost_basis_ps, realized_pnl, dividends, stock, user):
-#         self.account = account
-#         self.quantity = quantity
-#         self.average_cost_basis = average_cost_basis
-#         self.average_cost_basis_ps = average_cost_basis_ps
-#         self.realized_pnl = realized_pnl
-#         self.dividends = dividends
-#         self.stock = stock
-#         self.user = user
-
-#     @staticmethod
-#     def create_holding(account, stock, user):
-#         exisiting_holding = Holding.get_holdings_for_user_account_symbol(user_id=user.id, account=account, symbol=stock.symbol)
-#         if exisiting_holding:
-#             return False, exisiting_holding
-
-#         holding = Holding(
-#             account=account,
-#             quantity=0,
-#             average_cost_basis=0,
-#             average_cost_basis_ps=0,
-#             realized_pnl=0,
-#             dividends=0,
-#             stock=stock,
-#             user=user
-#         )
-#         try:
-#             db.session.add(holding)
-#             return True, holding
-#         except:
-#             return False, None
-    
-#     @staticmethod
-#     def get_holdings_for_user(user_id):
-#         return Holding.query.filter_by(user_id=user_id).all()
-
-#     @staticmethod
-#     def get_holdings_for_user_account_symbol(user_id, account, symbol):
-#         return Holding.query.filter_by(user_id=user_id, account=account, symbol=symbol).first()
-
-#     def update_holding(self, operation, transaction, quantity, price, commission):
-#         new_quantity = self.quantity
-#         new_acb = self.average_cost_basis
-#         new_realized_pnl = self.realized_pnl
-#         new_dividends = self.dividends
-#         if operation == "Insert":
-#             if transaction == "Buy":
-#                 new_quantity = self.quantity + quantity
-#                 new_acb = self.average_cost_basis + ((quantity * price) + commission)
-#                 new_realized_pnl = self.realized_pnl
-#             elif transaction == "Sell":
-#                 new_quantity = self.quantity - quantity
-#                 new_acb = self.average_cost_basis - (quantity * self.average_cost_basis/self.quantity)
-#                 new_realized_pnl = self.realized_pnl + ((quantity * price) - commission)               
-#             elif transaction == "Dividend":
-#                 new_dividends = self.dividends + price
-#         elif operation == "Remove":
-#             if transaction == "Buy":
-#                 new_quantity = self.quantity - quantity
-#                 new_acb = self.average_cost_basis - ((quantity * price) + commission)
-#                 new_realized_pnl = self.realized_pnl
-#             elif transaction == "Sell":
-#                 new_quantity = self.quantity + quantity
-#                 new_acb = self.average_cost_basis + (quantity * self.average_cost_basis/self.quantity)
-#                 new_realized_pnl = self.realized_pnl - ((quantity * price) - commission)
-#             elif transaction == "Dividend":
-#                 new_dividends = self.dividends - price
-
-#         self.quantity = int(new_quantity)
-#         self.average_cost_basis = new_acb
-#         self.realized_pnl = new_realized_pnl
-#         self.dividends = new_dividends
-        
-#         if(self.quantity > 0):
-#             self.average_cost_basis_ps = self.average_cost_basis / self.quantity
-#         else:
-#             self.average_cost_basis_ps = 0
-        
-#         return True
-
-#     @staticmethod
-#     def holdings_with_stock_quotes(user_id):
-#         holdings_stocks = db.session.query(Holding, Stock_).filter(user_id==user_id).join(Stock_Quote).all()
-#         holdings_stocks = [list(x) for x in holdings_stocks]
-#         return holdings_stocks
-
-#     @staticmethod
-#     def holdings_with_stock_quotes_calculated_fields(holdings_stocks):
-#         calculated_fileds = []
-#         total_market_value = 0
-#         for pair in holdings_stocks:
-#             output_item = {}
-#             # market_value
-#             quantity = pair[0].quantity
-#             latest_price = pair[1].latest_price
-#             market_value = quantity * latest_price
-#             total_market_value += market_value
-#             output_item.update({'market_value': market_value})
-#              # unrealized_pnl
-#             book_value = pair[0].average_cost_basis
-#             unrealized_pnl = market_value - book_value
-#             output_item.update({'unrealized_pnl': unrealized_pnl})
-#             # unrealized_pnl_percent
-#             if book_value == 0:
-#                 unrealized_pnl_percent = 0
-#             else:
-#                 unrealized_pnl_percent = 100 * (unrealized_pnl / book_value)
-#             output_item.update({'unrealized_pnl_percent': unrealized_pnl_percent})
-
-#             calculated_fileds.append(output_item)
-
-#         # weight
-#         for item in calculated_fileds:
-#             market_value = item['market_value']
-#             if total_market_value == 0:
-#                 weight = 0
-#             else:
-#                 weight = 100 * (market_value / total_market_value)
-#             item.update({'weight': weight})
-           
-#         return calculated_fileds
-
-#     @staticmethod
-#     def holdings_with_stock_quotes_serializer(holdings_stocks, calculated_fields=None):
-#         output_list = []
-#         for pair in holdings_stocks:
-#             output_item = {}
-#             for item in pair:
-#                 output_item.update(item.serialize)
-#             output_list.append(output_item)
-
-#         if calculated_fields and (len(output_list) == len(calculated_fields)):
-#             for i in range(0,len(output_list)):
-#                 for field in calculated_fields[i]:
-#                     calculated_fields[i][field] = f'{calculated_fields[i][field]}'
-#                 output_list[i].update(calculated_fields[i])
-#         return output_list
-
-#     @property
-#     def serialize(self):
-#         return {
-#             'id'                    : self.id,
-#             'account'               : self.account,
-#             'symbol'                : self.symbol,
-#             'quantity'              : f'{self.quantity}',
-#             'average_cost_basis'    : f'{self.average_cost_basis}',
-#             'average_cost_basis_ps' : f'{self.average_cost_basis_ps}',
-#             'realized_pnl'          : f'{self.realized_pnl}',
-#             'dividends'             : f'{self.dividends}',
-#             'user_id'               : self.user_id
-#         }

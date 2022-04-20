@@ -8,16 +8,24 @@ export const useSortableData = (items = [], config = null) => {
     if (sortConfig !== null) {
       sortableItems.sort((a, b) => {
         if (
-          a[sortConfig.key].localeCompare(b[sortConfig.key], undefined, {
-            numeric: true,
-          }) === -1
+          String(a[sortConfig.key]).localeCompare(
+            String(b[sortConfig.key]),
+            undefined,
+            {
+              numeric: true,
+            }
+          ) === -1
         ) {
           return sortConfig.direction === "asc" ? -1 : 1;
         }
         if (
-          a[sortConfig.key].localeCompare(b[sortConfig.key], undefined, {
-            numeric: true,
-          }) === 1
+          String(a[sortConfig.key]).localeCompare(
+            String(b[sortConfig.key]),
+            undefined,
+            {
+              numeric: true,
+            }
+          ) === 1
         ) {
           return sortConfig.direction === "asc" ? 1 : -1;
         }

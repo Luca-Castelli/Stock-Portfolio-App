@@ -1,7 +1,7 @@
 from decimal import Decimal
 from datetime import datetime
-import requests
 import yfinance as yf
+import pandas as pd
 from sqlalchemy import Column, String, Numeric, ForeignKey, DateTime, Integer, or_
 
 from app import db
@@ -55,18 +55,15 @@ class Stock(db.Model):
 
     @staticmethod
     def populate_stocks():
-        urls = [item + "?token=" + IEX_TOKEN for item in IEX_SYMBOLS]
-
-        for url in urls:
-            response = requests.get(url)
-            data = response.json()
-
-            for d in data:
-                success, stock = Stock.create_stock(symbol=d['symbol'], exchange=d['exchange'],
-                    exchange_name=d['exchangeName'], name=d['name'], type=d['type'], region=d['region'], 
-                    currency=d['currency'])
-                if success:
-                    db.session.commit()
+        Stock.query.delete()
+        db.session.commit()
+        ca = pd.read_json('./app/assets/ca_symbols.json', orient='records')
+        us = pd.read_json('./app/assets/us_symbols.json', orient='records')
+        stocks = pd.concat([ca,us],ignore_index=True)
+        stocks = stocks.set_index('symbol')
+        stocks = stocks[['exchange', 'exchangeName', 'name', 'type', 'region', 'currency']]
+        stocks = stocks.rename(columns={'exchangeName':'exchange_name'})
+        stocks.to_sql('stock', db.session.bind, if_exists='append')
         return True
 
     @staticmethod
@@ -119,18 +116,30 @@ class Stock_Price(db.Model):
         return Stock_Price.query.filter_by(symbol=symbol, date=date).first()
 
     @staticmethod
-    def fetch_stock_prices(symbols):
+    def fetch_stock_prices(symbols=None):
         Stock_Price.query.delete()
         db.session.commit()
-        for symbol in symbols:
-            stock = yf.Ticker(symbol)
-            stock_h = stock.history(period="max")
-            stock_d = stock_h.reset_index()
-            stock_d['symbol'] = symbol
-            stock_d = stock_d.set_index('symbol')
-            stock_d = stock_d[['Close', 'Date']]
-            stock_d = stock_d.rename(columns={'Close':'price', 'Date':'date'})
-            stock_d.to_sql('stock_price', db.session.bind, if_exists='append')
+        if symbols:
+            for symbol in symbols:
+                stock = yf.Ticker(symbol)
+                stock_h = stock.history(period="max")
+                stock_d = stock_h.reset_index()
+                stock_d['symbol'] = symbol
+                stock_d = stock_d.set_index('symbol')
+                stock_d = stock_d[['Close', 'Date']]
+                stock_d = stock_d.rename(columns={'Close':'price', 'Date':'date'})
+                stock_d.to_sql('stock_price', db.session.bind, if_exists='append')
+        else:
+            for stock in Stock.get_US_canadian_symbols():
+                symbol = stock.symbol
+                stock = yf.Ticker(symbol)
+                stock_h = stock.history(period="max")
+                stock_d = stock_h.reset_index()
+                stock_d['symbol'] = symbol
+                stock_d = stock_d.set_index('symbol')
+                stock_d = stock_d[['Close', 'Date']]
+                stock_d = stock_d.rename(columns={'Close':'price', 'Date':'date'})
+                stock_d.to_sql('stock_price', db.session.bind, if_exists='append')
         return True
     
     @property
@@ -215,6 +224,8 @@ class FX_Price(db.Model):
 
     @staticmethod
     def fetch_fx_prices():
+        FX_Price.query.delete()
+        db.session.commit()
         usdcad = yf.Ticker("USDCAD=x")
         usdcad_h = usdcad.history(period="max")
         usdcad_d = usdcad_h.reset_index()

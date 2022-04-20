@@ -122,6 +122,7 @@ function TradeLogForm() {
         },
       });
       const data = await response.json();
+      console.log(symbols);
       if (response.status === 200) {
         setSymbols(data);
       } else {

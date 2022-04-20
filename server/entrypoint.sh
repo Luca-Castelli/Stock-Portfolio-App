@@ -11,12 +11,12 @@ then
     echo "PostgreSQL started"
 fi
 
-python manage.py create_db
-python manage.py seed_users
-python manage.py seed_stocks
-python manage.py seed_fx
-python manage.py seed_trade_log
-python manage.py seed_stock_prices
-python manage.py seed_fx_prices
+# python manage.py create_db
+# python manage.py seed_users
+# python manage.py seed_stocks
+# python manage.py seed_fx
+# python manage.py seed_trade_log
+# python manage.py seed_stock_prices
+# python manage.py seed_fx_prices
 
 exec "$@"

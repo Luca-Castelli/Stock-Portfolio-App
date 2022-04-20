@@ -1,7 +1,7 @@
 import React from "react";
 import { IoMdRemoveCircle } from "react-icons/io";
 import { UseAuthStore, UseDataStore } from "../utils/store";
-import { NumberDisplay } from "../utils/NumberDisplay";
+import NumberDisplay from "./NumberDisplay";
 
 function TradeLogRow({ item }) {
   const csrfToken = UseAuthStore((state) => state.csrfToken);
@@ -57,9 +57,15 @@ function TradeLogRow({ item }) {
       <td className="pl-2">{account}</td>
       <td className="pl-2">{transaction}</td>
       <td className="pl-2">{symbol}</td>
-      <td className="pl-2">{NumberDisplay(quantity, 0)}</td>
-      <td className="pl-2">{NumberDisplay(price, 2)}</td>
-      <td className="pl-2">{NumberDisplay(commission, 2)}</td>
+      <td className="pl-2">
+        <NumberDisplay value={quantity} digits={0} />
+      </td>
+      <td className="pl-2">
+        <NumberDisplay value={price} digits={2} />
+      </td>
+      <td className="pl-2">
+        <NumberDisplay value={commission} digits={2} />
+      </td>
       <td>
         <button onClick={handleRemoveTrade} className="align-middle">
           <IoMdRemoveCircle style={{ color: "red" }} />

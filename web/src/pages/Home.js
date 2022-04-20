@@ -18,7 +18,7 @@ function Home() {
   return (
     <main className="h-screen dark:bg-black">
       <Navbar />
-      <Performance />
+      {/* <Performance /> */}
       <Holdings />
       <TradeLogForm />
       <TradeLog />
