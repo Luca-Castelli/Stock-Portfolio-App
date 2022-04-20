@@ -37,4 +37,4 @@ Handling of multiple accounts, allowing users to track a seperate cost basis for
 ![gif_of_handling_of_accounts](demo/handling_of_accounts.gif)
 
 Both the Holdings and Trade Log tables are sortable, making it easy for users to view data the way they like.
-![gif_of_sorting](demo/sorting.gif.gif)
+![gif_of_sorting](demo/sorting.gif)
